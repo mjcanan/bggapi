@@ -1,16 +1,18 @@
 import requests
 import xml.etree.ElementTree as ET
 import sys
+#import untangle
 
 wrongName = True
 while wrongName:
     try:
         user = input("Enter your BBG Username: ")
-        response = requests.get("https://api.geekdo.com/xmlapi2/collection?username=" + user + "&own=1")
+        apiURL = str("https://api.geekdo.com/xmlapi2/collection?username=" + user + "&own=1")
+        response = requests.get(apiURL)
         tree = ET.fromstring(response.content)
         wrongName = False
-    except:
-        print("Whoops!  Something went wrong.  Please try again later.")
+    except Exception as err:
+        print(err)
         sys.exit()
 
     if not tree.attrib:
@@ -18,7 +20,8 @@ while wrongName:
             e = errors.find('message').text
         print(e)
         wrongName = True
-
+# playing with untangle
+#    obj = untangle.parse(apiURL)
 
 i = 1
 for item in tree.findall('item'):
