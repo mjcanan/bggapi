@@ -19,6 +19,7 @@ while wrongName:
         print(e)
         wrongName = True
 
+
 i = 1
 for item in tree.findall('item'):
     name = item.find('name').text
