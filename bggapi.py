@@ -4,10 +4,26 @@ import sys
 #import untangle
 
 wrongName = True
+option = -1
+i = 1
+
 while wrongName:
     try:
         user = input("Enter your BBG Username: ")
-        apiURL = str("https://api.geekdo.com/xmlapi2/collection?username=" + user + "&own=1")
+        while option not in range(1,3):
+            try:
+                option = int(input("Select Option: Own (1), Wishlist (2): "))
+            except ValueError as err:
+                print(err)
+            if option not in range(1,3):
+                print("Usage: Enter 1 for 'Own', Enter 2 for 'Wishlist'")
+
+        if option == 1:
+            setting = "&own=1"
+        else:
+            setting = "&wishlist=1"
+
+        apiURL = str("https://api.geekdo.com/xmlapi2/collection?username=" + user + setting)
         response = requests.get(apiURL)
         tree = ET.fromstring(response.content)
         wrongName = False
@@ -20,10 +36,8 @@ while wrongName:
             e = errors.find('message').text
         print(e)
         wrongName = True
-# playing with untangle
-#    obj = untangle.parse(apiURL)
 
-i = 1
+print("--------------------------------")
 for item in tree.findall('item'):
     name = item.find('name').text
     print(f"{i}: {name}")
