@@ -1,38 +1,26 @@
-import requests
-import xml.etree.ElementTree as ET
 import sys
-#import untangle
+import untangle
 
 wrongName = True
 while wrongName:
     try:
         user = input("Enter your BBG Username: ")
         apiURL = str("https://api.geekdo.com/xmlapi2/collection?username=" + user + "&own=1")
-        response = requests.get(apiURL)
-        tree = ET.fromstring(response.content)
+        obj = untangle.parse(apiURL)
         wrongName = False
     except Exception as err:
         print(err)
         sys.exit()
 
-    if not tree.attrib:
-        for errors in tree.findall('error'):
-            e = errors.find('message').text
-        print(e)
-        wrongName = True
-# playing with untangle
-#    obj = untangle.parse(apiURL)
 
-i = 1
-for item in tree.findall('item'):
-    name = item.find('name').text
-    print(f"{i}: {name}")
-    i = i + 1
+# TODO: loop to get objects parsed
 print("--------------------------------")
-print(f"Total games: {i-1}")
 
 # TODO: Allow for more specific parsing (previously owned, on wish list) and sorting
 # TODO: Add GUI (tkinter)
 # TODO: Better Error Handling
-# TODO: Organize code into functions
+# TODO: Create game objects that are populated from the xml and stored in an array
 # TODO: Comment
+
+# untangle documentation:
+# https://readthedocs.org/projects/untangle/downloads/pdf/latest/#:~:text=untangle%20is%20a%20tiny%20Python,available%20under%20the%20MIT%20license.&text=untangle.,which%20represents%20the%20given%20document.
