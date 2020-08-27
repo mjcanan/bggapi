@@ -129,7 +129,8 @@ class Collection:
 user_name = input("Enter User Name: ")
 table = Collection(user_name)
 table.load()
-option = input ("Type 'games' to print owned games, 'wish_list' for wishlist, 'expansions' for expansions:  ")
-table.sort_by('squid')
+option = input("Type 'games' to print owned games, 'wish_list' for wishlist, 'expansions' for expansions:  ")
+sort_option = input("Choose sort key: ")
+table.sort_by(sort_option)
 table.out_formatted(option)
 
