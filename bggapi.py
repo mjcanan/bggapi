@@ -93,7 +93,6 @@ class Collection:
 
     def out_formatted(self, subset):
         count = 0
-
         while not (subset.lower() in ['games', 'wish_list', 'expansions']):
             subset = input("Usage -- 'games' 'wish_list' 'expansions': ")
 
@@ -116,19 +115,21 @@ class Collection:
         print(f'Total:  {count}')
 
     def sort_by(self, sort_type):
-        #while sort_type not in []
-        self.games = sorted(self.games, key=lambda game: int(game['num_plays']))
-
-
+        while sort_type not in self.games[0]:
+            sort_type = input(f"Enter a key. Usage -- {self.games[0].keys()}: ")
+            try:
+                self.games = sorted(self.games, key=lambda game: int(game[sort_type]))
+            except TypeError:
+                self.games = sorted(self.games, key=lambda game: game[sort_type])
 
 #TODO def to_json():
 #jstr = json.dumps(x.games)
-#
 
-name = input("Enter User Name: ")
-x = Collection(name)
-x.load()
+
+user_name = input("Enter User Name: ")
+table = Collection(user_name)
+table.load()
 option = input ("Type 'games' to print owned games, 'wish_list' for wishlist, 'expansions' for expansions:  ")
-x.sort_by('get_num_plays')
-x.out_formatted(option)
+table.sort_by('squid')
+table.out_formatted(option)
 
