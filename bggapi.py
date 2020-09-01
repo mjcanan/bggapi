@@ -1,6 +1,10 @@
 import untangle
 import json
-
+import requests
+'''
+THE INTENT WITH THIS BRANCH IS TO TURN THIS CODE INTO A SCRIPT THAT WILL GET ME THE CURRENT PRICES
+FOR ALL MY GAMES, AND PROVIDE A LINK - TKINTER FOR GUI
+'''
 class Collection:
     def __init__(self, name):
         self.name = name
@@ -45,7 +49,7 @@ class Collection:
             'rank': rank_list,
             'own': p.status["own"],
             'wish_list': p.status["wishlist"],
-            'num_plays': p.numplays.cdata
+            'num_plays': p.numplays.cdata,
         }
 
         return _d
@@ -122,6 +126,34 @@ class Collection:
             except TypeError:
                 self.games = sorted(self.games, key=lambda game: game[sort_type])
 
+    def wish_price(self):
+        for el in self.games:
+            name = el['name']
+            el_id = el['bgg_id']
+            url = ('https://www.boardgamegeek.com/api/amazon/textads?objectid=' + el_id + '&objecttype=thing')
+            response = requests.get(url)
+            amazon = json.loads(response.text)
+            try:
+                keys = list(amazon.keys())
+                region = keys[0]
+            except AttributeError:
+                pass
+
+            if not amazon:
+                pass
+            else:
+                try:
+                    amazon_price = amazon[region]['defaultprice']
+                    if amazon_price == "(unavailable)":
+                        continue
+                    else:
+                        print(f"{name}: {amazon_price}")
+                        continue
+                except KeyError:
+                     pass
+            print(f"{name} is not available on Amazon")
+
+
 #TODO def to_json():
 #jstr = json.dumps(x.games)
 
@@ -129,8 +161,10 @@ class Collection:
 user_name = input("Enter User Name: ")
 table = Collection(user_name)
 table.load()
-option = input("Type 'games' to print owned games, 'wish_list' for wishlist, 'expansions' for expansions:  ")
-sort_option = input("Choose sort key: ")
+#option = input("Type 'games' to print owned games, 'wish_list' for wishlist, 'expansions' for expansions:  ")
+sort_option = "year_published"
+    #input("Choose sort key: ")
 table.sort_by(sort_option)
-table.out_formatted(option)
-
+#table.out_formatted(option)
+input("Get Wishlist Prices \n")
+table.wish_price()
