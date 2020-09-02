@@ -5,17 +5,18 @@ import requests
 THE INTENT WITH THIS BRANCH IS TO TURN THIS CODE INTO A SCRIPT THAT WILL GET ME THE CURRENT PRICES
 FOR ALL MY GAMES, AND PROVIDE A LINK - TKINTER FOR GUI
 '''
-class Collection:
+class Wishlist:
     def __init__(self, name):
         self.name = name
-        self.games = []
-        self.expansions = []
         self.wish_list = []
 
     @staticmethod
     def __build_dict(p, fp):
         rank = fp.stats.rating.ranks.rank
         rank_list = []
+        msrp = ""
+        c_price = ""
+        a_link = ""
 
         # Handling untangle returning single-element list containing string in dictionary format for ranks
         for i in range(len(rank)):
@@ -32,6 +33,8 @@ class Collection:
         except AttributeError:
             pub_year = None
 
+
+
         _d = {
             'name': p.name.cdata,
             'bgg_id': p['objectid'],
@@ -47,12 +50,22 @@ class Collection:
             'bayes_average:': fp.stats.rating.bayesaverage['value'],
             'std_dev': fp.stats.rating.stddev['value'],
             'rank': rank_list,
-            'own': p.status["own"],
-            'wish_list': p.status["wishlist"],
             'num_plays': p.numplays.cdata,
+
         }
 
         return _d
+
+    @staticmethod
+    def __loading_display(i):
+        status = "Loading ."
+        dot = " ."
+        if i == 0:
+            print(status, end=" ")
+        else:
+            print('\b'*len(status), end=" ")
+            status = str(status + (dot * i%3))
+            print(status, end=" ")
 
 
     def __pre_build(self, _obj, _full_obj, _exp):
@@ -60,16 +73,7 @@ class Collection:
             _path = _obj.items.item[i]
             _full_path = _full_obj.items.item[i]
             _game_dict = self.__build_dict(_path, _full_path)
-
-            if int(_game_dict['own']):
-                if _exp:
-                    self.expansions.append(_game_dict)
-                else:
-                    self.games.append(_game_dict)
-            elif int(_game_dict['wish_list']):
-                self.wish_list.append(_game_dict)
-            else:
-                pass
+            self.wish_list.append(_game_dict)
 
     def load(self):
         check = True
@@ -80,7 +84,7 @@ class Collection:
         # Three calls are necessary due to quirks in boardgamegeek.com's API - see bgg xml document tree.txt
 
         while check:
-            api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name)
+            api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name + "&wishlist=1")
             obj_full = untangle.parse(api_url + full_stats)
             obj_games = untangle.parse(api_url + no_expansion)
             obj_expansion = untangle.parse(api_url + expansion)
@@ -95,39 +99,21 @@ class Collection:
         self.__pre_build(obj_games, obj_full, 0)
         self.__pre_build(obj_expansion, obj_full, 1)
 
-    def out_formatted(self, subset):
-        count = 0
-        while not (subset.lower() in ['games', 'wish_list', 'expansions']):
-            subset = input("Usage -- 'games' 'wish_list' 'expansions': ")
-
-        if subset == 'games':
-            subset = self.games
-        elif subset == 'expansions':
-            subset = self.expansions
-        else:
-            subset = self.wish_list
-
-        for i in range(len(subset)):
-            for keys in subset[i]:
-                if type(subset[i][keys]) == list:
-                    for j in range(0, len(subset[i][keys]), 2):
-                        print(f'{subset[i][keys][j]}: {subset[i][keys][j+1]}')
-                else:
-                    print(f'{keys}: {subset[i][keys]}')
-            print("-" * 20)
-            count = count + 1
-        print(f'Total:  {count}')
 
     def sort_by(self, sort_type):
-        while sort_type not in self.games[0]:
-            sort_type = input(f"Enter a key. Usage -- {self.games[0].keys()}: ")
+        while sort_type not in self.wish_list[0]:
+            sort_type = input(f"Enter a key. Usage -- {self.wish_list[0].keys()}: ")
             try:
-                self.games = sorted(self.games, key=lambda game: int(game[sort_type]))
+                self.wish_list = sorted(self.wish_list, key=lambda game: int(game[sort_type]))
             except TypeError:
-                self.games = sorted(self.games, key=lambda game: game[sort_type])
+                self.wish_list = sorted(self.wish_list, key=lambda game: game[sort_type])
 
     def wish_price(self):
-        for el in self.games:
+
+        # Multiple calls to BGG api to get Amazon data is needed -- multiple inline queries not supported
+        # Although BGG returns its data in XML, the Amazon data is in JSON
+
+        for el in self.wish_list:
             name = el['name']
             el_id = el['bgg_id']
             url = ('https://www.boardgamegeek.com/api/amazon/textads?objectid=' + el_id + '&objecttype=thing')
@@ -135,6 +121,7 @@ class Collection:
             amazon = json.loads(response.text)
             try:
                 keys = list(amazon.keys())
+                # return the first key in list, as this is the primary source used by BGG for pricing
                 region = keys[0]
             except AttributeError:
                 pass
@@ -144,27 +131,28 @@ class Collection:
             else:
                 try:
                     amazon_price = amazon[region]['defaultprice']
+                    amazon_msrp = amazon[region]['listprice']
+                    amazon_link = amazon[region]['url']
                     if amazon_price == "(unavailable)":
+                        el['msrp'] = "n/a"
+                        el['price'] = "n/a"
+                        el['amzlink'] = amazon_link
                         continue
                     else:
-                        print(f"{name}: {amazon_price}")
+                        el['msrp'] = amazon_msrp
+                        el['price'] = amazon_price
+                        el['amzlink'] = amazon_link
+                        #print(f"{name}: MSRP: {amazon_msrp} / Current Price: {amazon_price} - {amazon_link}")
                         continue
                 except KeyError:
                      pass
-            print(f"{name} is not available on Amazon")
-
-
-#TODO def to_json():
-#jstr = json.dumps(x.games)
+            el['msrp'] = "n/a"
+            el['price'] = "n/a"
+            el['amzlink'] = "n/a"
+            #print(f"{name} is not available on Amazon")
 
 
 user_name = input("Enter User Name: ")
-table = Collection(user_name)
+table = Wishlist(user_name)
 table.load()
-#option = input("Type 'games' to print owned games, 'wish_list' for wishlist, 'expansions' for expansions:  ")
-sort_option = "year_published"
-    #input("Choose sort key: ")
-table.sort_by(sort_option)
-#table.out_formatted(option)
-input("Get Wishlist Prices \n")
 table.wish_price()
