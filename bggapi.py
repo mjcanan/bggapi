@@ -14,9 +14,6 @@ class Wishlist:
     def __build_dict(p, fp):
         rank = fp.stats.rating.ranks.rank
         rank_list = []
-        msrp = ""
-        c_price = ""
-        a_link = ""
 
         # Handling untangle returning single-element list containing string in dictionary format for ranks
         for i in range(len(rank)):
@@ -32,8 +29,6 @@ class Wishlist:
             pub_year = p.yearpublished.cdata
         except AttributeError:
             pub_year = None
-
-
 
         _d = {
             'name': p.name.cdata,
@@ -84,7 +79,7 @@ class Wishlist:
         # Three calls are necessary due to quirks in boardgamegeek.com's API - see bgg xml document tree.txt
 
         while check:
-            api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name + "&wishlist=1")
+            api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name)
             obj_full = untangle.parse(api_url + full_stats)
             obj_games = untangle.parse(api_url + no_expansion)
             obj_expansion = untangle.parse(api_url + expansion)
@@ -99,6 +94,19 @@ class Wishlist:
         self.__pre_build(obj_games, obj_full, 0)
         self.__pre_build(obj_expansion, obj_full, 1)
 
+    def out_formatted(self):
+        count = 0
+
+        for el in self.wish_list:
+            for keys in el:
+                if type(el[keys]) == list:
+                    for j in range(0, len(el[keys]), 2):
+                        print(f'{el[keys][j]}: {el[keys][j+1]}')
+                else:
+                    print(f'{keys}: {el[keys]}')
+            print("-" * 20)
+            count = count + 1
+        print(f'Total:  {count}')
 
     def sort_by(self, sort_type):
         while sort_type not in self.wish_list[0]:
@@ -156,3 +164,4 @@ user_name = input("Enter User Name: ")
 table = Wishlist(user_name)
 table.load()
 table.wish_price()
+table.out_formatted()
