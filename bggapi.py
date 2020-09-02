@@ -53,14 +53,20 @@ class Wishlist:
 
     @staticmethod
     def __loading_display(i):
-        status = "Loading ."
-        dot = " ."
+        status = "Loading"
+        dot = "."
+        _dots = dot * (i%5)
+        del_len = len(status)+len(_dots)
         if i == 0:
-            print(status, end=" ")
+            print(status + dot, end="")
+        elif _dots:
+            print('\b' * (del_len), end="")
+            print(status + _dots, end="")
         else:
-            print('\b'*len(status), end=" ")
-            status = str(status + (dot * i%3))
-            print(status, end=" ")
+            print('\b' * (len(status) + 5), end="")
+            print(status + dot, end="")
+
+
 
 
     def __pre_build(self, _obj, _full_obj, _exp):
@@ -78,8 +84,9 @@ class Wishlist:
 
         # Three calls are necessary due to quirks in boardgamegeek.com's API - see bgg xml document tree.txt
 
+        #TODO: adding "&wishlist=1 creates an attribute error when building the dict - creates a Nonetype object
         while check:
-            api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name)
+            api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name + "&wishlist=1")
             obj_full = untangle.parse(api_url + full_stats)
             obj_games = untangle.parse(api_url + no_expansion)
             obj_expansion = untangle.parse(api_url + expansion)
@@ -117,16 +124,18 @@ class Wishlist:
                 self.wish_list = sorted(self.wish_list, key=lambda game: game[sort_type])
 
     def wish_price(self):
-
+        i = 0
         # Multiple calls to BGG api to get Amazon data is needed -- multiple inline queries not supported
         # Although BGG returns its data in XML, the Amazon data is in JSON
 
         for el in self.wish_list:
-            name = el['name']
+            #name = el['name']
             el_id = el['bgg_id']
             url = ('https://www.boardgamegeek.com/api/amazon/textads?objectid=' + el_id + '&objecttype=thing')
             response = requests.get(url)
             amazon = json.loads(response.text)
+            self.__loading_display(i)
+            i = i + 1
             try:
                 keys = list(amazon.keys())
                 # return the first key in list, as this is the primary source used by BGG for pricing
