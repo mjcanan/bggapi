@@ -8,6 +8,8 @@ FOR ALL MY GAMES, AND PROVIDE A LINK - TKINTER FOR GUI
 class Wishlist:
     def __init__(self, name):
         self.name = name
+        self.games = []
+        self.expansions = []
         self.wish_list = []
 
     @staticmethod
@@ -74,7 +76,16 @@ class Wishlist:
             _path = _obj.items.item[i]
             _full_path = _full_obj.items.item[i]
             _game_dict = self.__build_dict(_path, _full_path)
-            self.wish_list.append(_game_dict)
+
+            if int(_game_dict['own']):
+                if _exp:
+                    self.expansions.append(_game_dict)
+                else:
+                    self.games.append(_game_dict)
+            elif int(_game_dict['wish_list']):
+                self.wish_list.append(_game_dict)
+            else:
+                pass
 
     def load(self):
         check = True
@@ -85,8 +96,9 @@ class Wishlist:
         # Three calls are necessary due to quirks in boardgamegeek.com's API - see bgg xml document tree.txt
 
         #TODO: adding "&wishlist=1 creates an attribute error when building the dict - creates a Nonetype object
+        #TODO: add check for BGG 202 response
         while check:
-            api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name + "&wishlist=1")
+            api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name)
             obj_full = untangle.parse(api_url + full_stats)
             obj_games = untangle.parse(api_url + no_expansion)
             obj_expansion = untangle.parse(api_url + expansion)
@@ -123,7 +135,7 @@ class Wishlist:
             except TypeError:
                 self.wish_list = sorted(self.wish_list, key=lambda game: game[sort_type])
 
-    def wish_price(self):
+    def load_price(self):
         i = 0
         # Multiple calls to BGG api to get Amazon data is needed -- multiple inline queries not supported
         # Although BGG returns its data in XML, the Amazon data is in JSON
@@ -172,5 +184,5 @@ class Wishlist:
 user_name = input("Enter User Name: ")
 table = Wishlist(user_name)
 table.load()
-table.wish_price()
+table.load_price()
 table.out_formatted()
