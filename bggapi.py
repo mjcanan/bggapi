@@ -5,15 +5,17 @@ import requests
 THE INTENT WITH THIS BRANCH IS TO TURN THIS CODE INTO A SCRIPT THAT WILL GET ME THE CURRENT PRICES
 FOR ALL MY GAMES, AND PROVIDE A LINK - TKINTER FOR GUI
 '''
-class Wishlist:
+class Collection:
     def __init__(self, name):
         self.name = name
         self.games = []
         self.expansions = []
         self.wish_list = []
+        self.total_owned = 0
+        self.total_wish_list = 0
+        self.total_exp = 0
 
-    @staticmethod
-    def __build_dict(p, fp):
+    def __build_dict(self, p, fp):
         rank = fp.stats.rating.ranks.rank
         rank_list = []
 
@@ -47,32 +49,43 @@ class Wishlist:
             'bayes_average:': fp.stats.rating.bayesaverage['value'],
             'std_dev': fp.stats.rating.stddev['value'],
             'rank': rank_list,
+            'own': p.status['own'],
+            'wish_list': p.status['wishlist'],
             'num_plays': p.numplays.cdata,
 
         }
 
         return _d
 
-    @staticmethod
-    def __loading_display(i):
-        status = "Loading"
-        dot = "."
-        _dots = dot * (i%5)
-        del_len = len(status)+len(_dots)
-        if i == 0:
-            print(status + dot, end="")
-        elif _dots:
-            print('\b' * (del_len), end="")
-            print(status + _dots, end="")
+
+    def __loading_display(self, i, total):
+        status = str("Loading " + str(i) + " of " + str(total))
+        if i == total:
+            print("\b" * len(status), end="")
+            print(status)
+        elif i > 0:
+            print("\b" * len(status), end="")
+            print(status, end="")
         else:
-            print('\b' * (len(status) + 5), end="")
-            print(status + dot, end="")
+            print(status, end="")
 
-
+        # status = "Loading"
+        # dot = "."
+        # _dots = dot * (i%5)
+        # del_len = len(status)+len(_dots)
+        # if i == 0:
+        #     print(status + dot, end="")
+        # elif _dots:
+        #     print('\b' * (del_len), end="")
+        #     print(status + _dots, end="")
+        # else:
+        #     print('\b' * (len(status) + 5), end="")
+        #     print(status + dot, end="")
 
 
     def __pre_build(self, _obj, _full_obj, _exp):
         for i in range(len(_obj.items)):
+
             _path = _obj.items.item[i]
             _full_path = _full_obj.items.item[i]
             _game_dict = self.__build_dict(_path, _full_path)
@@ -80,10 +93,13 @@ class Wishlist:
             if int(_game_dict['own']):
                 if _exp:
                     self.expansions.append(_game_dict)
+                    self.total_exp += 1
                 else:
                     self.games.append(_game_dict)
+                    self.total_owned += 1
             elif int(_game_dict['wish_list']):
                 self.wish_list.append(_game_dict)
+                self.total_wish_list += 1
             else:
                 pass
 
@@ -110,9 +126,11 @@ class Wishlist:
             except AttributeError:
                 pass
 
+
         self.__pre_build(obj_games, obj_full, 0)
         self.__pre_build(obj_expansion, obj_full, 1)
 
+    # TODO: consider removing this from object and making it a standalone function
     def out_formatted(self):
         count = 0
 
@@ -136,18 +154,21 @@ class Wishlist:
                 self.wish_list = sorted(self.wish_list, key=lambda game: game[sort_type])
 
     def load_price(self):
-        i = 0
+        i = 1
         # Multiple calls to BGG api to get Amazon data is needed -- multiple inline queries not supported
         # Although BGG returns its data in XML, the Amazon data is in JSON
 
-        for el in self.wish_list:
+        for el in self.games:
             #name = el['name']
             el_id = el['bgg_id']
             url = ('https://www.boardgamegeek.com/api/amazon/textads?objectid=' + el_id + '&objecttype=thing')
             response = requests.get(url)
             amazon = json.loads(response.text)
-            self.__loading_display(i)
-            i = i + 1
+
+            #Visual Output for Command Line
+            self.__loading_display(i, self.total_owned)
+            i += 1
+
             try:
                 keys = list(amazon.keys())
                 # return the first key in list, as this is the primary source used by BGG for pricing
@@ -182,7 +203,6 @@ class Wishlist:
 
 
 user_name = input("Enter User Name: ")
-table = Wishlist(user_name)
+table = Collection(user_name)
 table.load()
 table.load_price()
-table.out_formatted()
