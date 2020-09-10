@@ -57,7 +57,6 @@ class Collection:
 
         return _d
 
-
     def __loading_display(self, i, total):
         status = str("Loading " + str(i) + " of " + str(total))
         if i == total:
@@ -69,25 +68,12 @@ class Collection:
         else:
             print(status, end="")
 
-        # status = "Loading"
-        # dot = "."
-        # _dots = dot * (i%5)
-        # del_len = len(status)+len(_dots)
-        # if i == 0:
-        #     print(status + dot, end="")
-        # elif _dots:
-        #     print('\b' * (del_len), end="")
-        #     print(status + _dots, end="")
-        # else:
-        #     print('\b' * (len(status) + 5), end="")
-        #     print(status + dot, end="")
-
-
     def __pre_build(self, _obj, _full_obj, _exp):
         for i in range(len(_obj.items)):
 
             _path = _obj.items.item[i]
             _full_path = _full_obj.items.item[i]
+
             _game_dict = self.__build_dict(_path, _full_path)
 
             if int(_game_dict['own']):
@@ -111,13 +97,13 @@ class Collection:
 
         # Three calls are necessary due to quirks in boardgamegeek.com's API - see bgg xml document tree.txt
 
-        #TODO: adding "&wishlist=1 creates an attribute error when building the dict - creates a Nonetype object
-        #TODO: add check for BGG 202 response
+        #TODO: add check for BGG 202 response - no built in response status_code with untangle - switch to ElementTree?
         while check:
             api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name)
             obj_full = untangle.parse(api_url + full_stats)
             obj_games = untangle.parse(api_url + no_expansion)
             obj_expansion = untangle.parse(api_url + expansion)
+
             check = False
             try:
                 if(obj_full.errors.error):
@@ -125,16 +111,18 @@ class Collection:
                     check = True
             except AttributeError:
                 pass
-
+            except ValueError as e:
+                print(e)
+                check = True
 
         self.__pre_build(obj_games, obj_full, 0)
         self.__pre_build(obj_expansion, obj_full, 1)
 
     # TODO: consider removing this from object and making it a standalone function
-    def out_formatted(self):
+    def out_formatted(self, f_list):
         count = 0
 
-        for el in self.wish_list:
+        for el in f_list:
             for keys in el:
                 if type(el[keys]) == list:
                     for j in range(0, len(el[keys]), 2):
@@ -153,20 +141,23 @@ class Collection:
             except TypeError:
                 self.wish_list = sorted(self.wish_list, key=lambda game: game[sort_type])
 
-    def load_price(self):
+    def load_price(self, sub_list=None):
         i = 1
-        # Multiple calls to BGG api to get Amazon data is needed -- multiple inline queries not supported
-        # Although BGG returns its data in XML, the Amazon data is in JSON
 
-        for el in self.games:
-            #name = el['name']
+        # Loading prices separated into a different function due to API call issues:
+        # Multiple calls to BGG API to get Amazon data are needed -- multiple inline queries not supported
+        # Although BGG returns its data in XML, the Amazon data is in JSON
+        if sub_list == None:
+            sub_list = self.games
+
+        for el in sub_list:
             el_id = el['bgg_id']
             url = ('https://www.boardgamegeek.com/api/amazon/textads?objectid=' + el_id + '&objecttype=thing')
             response = requests.get(url)
             amazon = json.loads(response.text)
 
             #Visual Output for Command Line
-            self.__loading_display(i, self.total_owned)
+            self.__loading_display(i, len(sub_list))
             i += 1
 
             try:
@@ -192,17 +183,18 @@ class Collection:
                         el['msrp'] = amazon_msrp
                         el['price'] = amazon_price
                         el['amzlink'] = amazon_link
-                        #print(f"{name}: MSRP: {amazon_msrp} / Current Price: {amazon_price} - {amazon_link}")
                         continue
                 except KeyError:
                      pass
             el['msrp'] = "n/a"
             el['price'] = "n/a"
             el['amzlink'] = "n/a"
-            #print(f"{name} is not available on Amazon")
 
 
-user_name = input("Enter User Name: ")
-table = Collection(user_name)
-table.load()
-table.load_price()
+# user_name = input("Enter User Name: ")
+# table = Collection(user_name)
+# table.load()
+# table.load_price()
+# input("Ready?: ")
+# table.load_price(table.wish_list)
+
