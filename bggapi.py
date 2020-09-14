@@ -103,6 +103,7 @@ class Collection:
         no_expansion = "&excludessubtype=boardgameexpansion"
         expansion = "&subtype=boardgameexpansion"
         full_stats = "&stats=1"
+        _202 = 'Your request for this collection has been accepted and will be processed.  Please try again later for access.'
 
         # Three calls are necessary due to quirks in boardgamegeek.com's API - see bgg xml document tree.txt
         while check:
@@ -112,31 +113,46 @@ class Collection:
             obj_expansion = untangle.parse(api_url + expansion)
             check = False
 
-            # Untangle does not return status response codes -- if 202, NoneType objects are returned
-            # Waits 3 seconds then attempts to call API again.
-            #
-            if not (obj_full and obj_games and obj_expansion):
-                time.sleep(3)
-                check = True
-                continue
-
             try:
                 if obj_full.errors.error:
-                    self.name = input(obj_full.errors.error.message.cdata + ".  Enter User Name: ")
+                    if __name__ == '__main__':
+                        self.name = input(obj_full.errors.error.message.cdata + ".  Enter User Name: ")
+                    else:
+                        return 1
+
                     if self.name == 'q':
                         sys.exit()
                     elif self.name == '-h':
                         Collection.usage(True)
                     check = True
+                elif str(obj_full.cdata) == _202 or str(obj_games.cdata) == _202 or str(obj_expansion.cdata) == _202:
+                    if __name__ == '__main__':
+                        print("Response 202.  Retrying in 3 seconds...")
+                        time.sleep(3)
+                        check = True
+                        continue
+                    else:
+                        return 2
             except AttributeError:
                 pass
             except ValueError as e:
                 print(e)
                 check = True
 
+            if obj_games.items['totalitems'] == '0':
+                if __name__ == '__main__':
+                    print("User has no collection data")
+                    self.name = input(".  Enter User Name: ")
+                    check = True
+                else:
+                    return 3
+
 
         self.__pre_build(obj_games, obj_full, 0)
         self.__pre_build(obj_expansion, obj_full, 1)
+
+        if not __name__ == '__main__':
+            return 0
 
     def out_formatted(self, f_list, f):
         count = 0
