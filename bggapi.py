@@ -1,6 +1,8 @@
 import untangle
 import json
 import requests
+import time
+import sys
 '''
 THE INTENT WITH THIS BRANCH IS TO TURN THIS CODE INTO A SCRIPT THAT WILL GET ME THE CURRENT PRICES
 FOR ALL MY GAMES, AND PROVIDE A LINK - TKINTER FOR GUI
@@ -69,25 +71,31 @@ class Collection:
             print(status, end="")
 
     def __pre_build(self, _obj, _full_obj, _exp):
-        for i in range(len(_obj.items)):
+        try:
+            for i in range(len(_obj.items)):
 
-            _path = _obj.items.item[i]
-            _full_path = _full_obj.items.item[i]
+                _path = _obj.items.item[i]
+                _full_path = _full_obj.items.item[i]
 
-            _game_dict = self.__build_dict(_path, _full_path)
+                _game_dict = self.__build_dict(_path, _full_path)
 
-            if int(_game_dict['own']):
-                if _exp:
-                    self.expansions.append(_game_dict)
-                    self.total_exp += 1
+                if int(_game_dict['own']):
+                    if _exp:
+                        self.expansions.append(_game_dict)
+                        self.total_exp += 1
+                    else:
+                        self.games.append(_game_dict)
+                        self.total_owned += 1
+                elif int(_game_dict['wish_list']):
+                    self.wish_list.append(_game_dict)
+                    self.total_wish_list += 1
                 else:
-                    self.games.append(_game_dict)
-                    self.total_owned += 1
-            elif int(_game_dict['wish_list']):
-                self.wish_list.append(_game_dict)
-                self.total_wish_list += 1
-            else:
-                pass
+                    pass
+        except AttributeError:
+            print("Something went wrong...")
+            print(_obj)
+            print(type(_obj))
+            sys.exit()
 
     def load(self):
         check = True
@@ -96,18 +104,28 @@ class Collection:
         full_stats = "&stats=1"
 
         # Three calls are necessary due to quirks in boardgamegeek.com's API - see bgg xml document tree.txt
-
-        #TODO: add check for BGG 202 response - no built in response status_code with untangle - switch to ElementTree?
         while check:
             api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name)
             obj_full = untangle.parse(api_url + full_stats)
             obj_games = untangle.parse(api_url + no_expansion)
             obj_expansion = untangle.parse(api_url + expansion)
-
             check = False
+
+            # Untangle does not return status response codes -- if 202, NoneType objects are returned
+            # Waits 3 seconds then attempts to call API again.
+            #
+            if not (obj_full and obj_games and obj_expansion):
+                time.sleep(3)
+                check = True
+                continue
+
             try:
                 if(obj_full.errors.error):
                     self.name = input(obj_full.errors.error.message.cdata + ".  Enter User Name: ")
+                    if self.name == 'q':
+                        sys.exit()
+                    elif self.name == '-h':
+                        Collection.usage(True)
                     check = True
             except AttributeError:
                 pass
@@ -115,23 +133,44 @@ class Collection:
                 print(e)
                 check = True
 
+
         self.__pre_build(obj_games, obj_full, 0)
         self.__pre_build(obj_expansion, obj_full, 1)
 
     # TODO: consider removing this from object and making it a standalone function
-    def out_formatted(self, f_list):
+    def out_formatted(self, f_list, f):
         count = 0
+        if f:
+            for el in f_list:
+                for keys in el:
+                    if type(el[keys]) == list:
+                        for j in range(0, len(el[keys]), 2):
+                            print(f'{el[keys][j]}: {el[keys][j+1]}')
+                    else:
+                        print(f'{keys}: {el[keys]}')
+                print("-" * 40)
+                count = count + 1
+            print(f'Total:  {count}')
+        else:
+            for i in range(len(f_list)):
+                print("-" * 40)
+                print(f"name: {f_list[i]['name']}\nmsrp: {f_list[i]['msrp']}\nprice: {f_list[i]['price']}\n" +
+                      f"link: {f_list[i]['amzlink']}")
 
-        for el in f_list:
-            for keys in el:
-                if type(el[keys]) == list:
-                    for j in range(0, len(el[keys]), 2):
-                        print(f'{el[keys][j]}: {el[keys][j+1]}')
-                else:
-                    print(f'{keys}: {el[keys]}')
-            print("-" * 20)
-            count = count + 1
-        print(f'Total:  {count}')
+    @staticmethod
+    def usage(t):
+        if t:
+            print("Usage: enter a valid BoardGameGeek user name to continue.  Press q to quit")
+        else:
+            print('''Usage:
+             g: output your owned games's name, msrp, price and amazon link
+                 g -f: output full information
+             w: output your wish list
+                 w -f: output full information
+             e: output your expansions
+                 e -f: output full information
+             q: quit
+            -h: help''')
 
     def sort_by(self, sort_type):
         while sort_type not in self.wish_list[0]:
@@ -147,7 +186,7 @@ class Collection:
         # Loading prices separated into a different function due to API call issues:
         # Multiple calls to BGG API to get Amazon data are needed -- multiple inline queries not supported
         # Although BGG returns its data in XML, the Amazon data is in JSON
-        if sub_list == None:
+        if sub_list is None:
             sub_list = self.games
 
         for el in sub_list:
@@ -156,7 +195,7 @@ class Collection:
             response = requests.get(url)
             amazon = json.loads(response.text)
 
-            #Visual Output for Command Line
+            # Visual Output for Command Line
             self.__loading_display(i, len(sub_list))
             i += 1
 
@@ -191,10 +230,65 @@ class Collection:
             el['amzlink'] = "n/a"
 
 
-# user_name = input("Enter User Name: ")
-# table = Collection(user_name)
-# table.load()
-# table.load_price()
-# input("Ready?: ")
-# table.load_price(table.wish_list)
+def main():
+    # TODO: argv for user name
+    try:
+        if len(sys.argv) < 2:
+            print('''
+            *-*-*-*-*-*-BOARD GAME GEEK COLLECTION PRICE LIST-*-*-*-*-*-*
+            * This program will load your BoardGameGeek collection and  *
+            * create a list of all your owned games, wish list games,   *
+            * and expansions, with all data associated therewith,       *
+            * including MSRP, list price and an Amazon link.            *
+            * Enter -h for help using the program.                      *
+            *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*\n''')
+            user_name = input("Enter User Name: ")
+        else:
+            user_name = sys.argv[1]
+    except IndexError:
+        user_name = input("Enter User Name: ")
 
+    if user_name == 'q':
+        sys.exit()
+    elif user_name == '-h':
+        Collection.usage(True)
+        user_name = input("Enter User Name: ")
+
+    table = Collection(user_name)
+    table.load()
+    print("LOADING GAME LIST...")
+    table.load_price()
+    print("LOADING WISH LIST...")
+    table.load_price(table.wish_list)
+    print("LOADING EXPANSIONS...")
+    table.load_price(table.expansions)
+
+    while True:
+        print("-" * 40)
+        cmd = input("Command: ").lower()
+        c_f = cmd.split(" ")
+
+        if len(c_f) > 2:
+            c_f = "-h"
+
+        if "-f" in c_f:
+            full = 1
+        else:
+            full = 0
+
+        if 'w' in c_f:
+            table.out_formatted(table.wish_list, full)
+        elif 'g' in c_f:
+            table.out_formatted(table.games, full)
+        elif 'e' in c_f:
+            table.out_formatted(table.expansions, full)
+        elif 'q' in c_f:
+            sys.exit()
+        elif '-h' in c_f:
+            Collection.usage(False)
+        else:
+            print("Enter -h for help")
+
+
+if __name__ == '__main__':
+    main()
