@@ -7,6 +7,8 @@ import sys
 THE INTENT WITH THIS BRANCH IS TO TURN THIS CODE INTO A SCRIPT THAT WILL GET ME THE CURRENT PRICES
 FOR ALL MY GAMES, AND PROVIDE A LINK - TKINTER FOR GUI
 '''
+
+
 class Collection:
     def __init__(self, name):
         self.name = name
@@ -54,7 +56,6 @@ class Collection:
             'own': p.status['own'],
             'wish_list': p.status['wishlist'],
             'num_plays': p.numplays.cdata,
-
         }
 
         return _d
@@ -120,7 +121,7 @@ class Collection:
                 continue
 
             try:
-                if(obj_full.errors.error):
+                if obj_full.errors.error:
                     self.name = input(obj_full.errors.error.message.cdata + ".  Enter User Name: ")
                     if self.name == 'q':
                         sys.exit()
@@ -137,7 +138,6 @@ class Collection:
         self.__pre_build(obj_games, obj_full, 0)
         self.__pre_build(obj_expansion, obj_full, 1)
 
-    # TODO: consider removing this from object and making it a standalone function
     def out_formatted(self, f_list, f):
         count = 0
         if f:
@@ -224,14 +224,13 @@ class Collection:
                         el['amzlink'] = amazon_link
                         continue
                 except KeyError:
-                     pass
+                    pass
             el['msrp'] = "n/a"
             el['price'] = "n/a"
             el['amzlink'] = "n/a"
 
 
 def main():
-    # TODO: argv for user name
     try:
         if len(sys.argv) < 2:
             print('''
@@ -248,9 +247,9 @@ def main():
     except IndexError:
         user_name = input("Enter User Name: ")
 
-    if user_name == 'q':
+    if user_name.lower() == 'q':
         sys.exit()
-    elif user_name == '-h':
+    elif user_name.lower() == '-h':
         Collection.usage(True)
         user_name = input("Enter User Name: ")
 
