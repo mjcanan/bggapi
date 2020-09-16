@@ -158,7 +158,9 @@ class Collection:
         count = 0
         if s:
             f_list = self.sort_by(f_list)
-
+            if f_list[1] == 4:
+                print(f_list[0])
+                return
         if f:
             for el in f_list:
                 print("-" * 40)
@@ -197,15 +199,25 @@ class Collection:
             -h: help''')
 
     def sort_by(self, col_list):
-        sort_type = input("Enter sort key: ")
+        sort_type = ""
+        i = 0
         while sort_type not in col_list[0]:
-            sort_type = input(f"Enter a key. Usage -- {col_list[0].keys()}: ")
-            try:
-                #col_list = sorted(col_list, key=lambda game: int(game[sort_type]))
-                col_list.sort(key=lambda game: int(game[sort_type]))
-            except TypeError or ValueError:
-                #col_list = sorted(col_list, key=lambda game: game[sort_type])
-                col_list.sort(key=lambda game: game[sort_type])
+            sort_type = input(f"Enter a key. Press k for keys: ")
+            if sort_type == 'k':
+                for key in col_list[0].keys():
+                    print(f"{key} | ", end="")
+                    i += 1
+                    if not i%5:
+                        print("")
+        try:
+            col_list = sorted(col_list, key=lambda game: float(game[sort_type]))
+            #col_list.sort(key=lambda game: int(game[sort_type]))
+        except TypeError:
+            col_list = sorted(col_list, key=lambda game: game[sort_type])
+            #col_list.sort(key=lambda game: game[sort_type])
+        except ValueError as err:
+            return [err,4]
+
         return col_list
 
     def load_price(self, sub_list=None):
@@ -306,7 +318,6 @@ def main():
         else:
             full = 0
 
-        # TODO: get sort_by to work
         if "-s" in c_f:
             to_sort = True
 
