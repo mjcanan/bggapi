@@ -99,20 +99,19 @@ class Collection:
             sys.exit()
 
     def load(self):
-        check = True
+
         no_expansion = "&excludessubtype=boardgameexpansion"
         expansion = "&subtype=boardgameexpansion"
         full_stats = "&stats=1"
-        _202 = 'Your request for this collection has been accepted and will be processed.  Please try again later for access.'
 
         # Three calls are necessary due to quirks in boardgamegeek.com's API - see bgg xml document tree.txt
-        while check:
+        while True:
             api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name)
             obj_full = untangle.parse(api_url + full_stats)
             obj_games = untangle.parse(api_url + no_expansion)
             obj_expansion = untangle.parse(api_url + expansion)
-            check = False
 
+            # test for invalid username
             try:
                 if obj_full.errors.error:
                     if __name__ == '__main__':
@@ -124,54 +123,62 @@ class Collection:
                         sys.exit()
                     elif self.name == '-h':
                         Collection.usage(True)
-                    check = True
-                elif str(obj_full.cdata) == _202 or str(obj_games.cdata) == _202 or str(obj_expansion.cdata) == _202:
+
+                    continue
+            except AttributeError:
+                # if no "error" attribute then there were no errors
+                pass
+
+            # Test for 202 response
+            try:
+                if obj_games.items['totalitems'] == '0':
                     if __name__ == '__main__':
-                        print("Response 202.  Retrying in 3 seconds...")
-                        time.sleep(3)
-                        check = True
+                        print("User has no collection data")
+                        self.name = input(".  Enter User Name: ")
                         continue
                     else:
-                        return 2
+                        return 3
+
+                self.__pre_build(obj_games, obj_full, 0)
+                self.__pre_build(obj_expansion, obj_full, 1)
             except AttributeError:
-                pass
-            except ValueError as e:
-                print(e)
-                check = True
-
-            if obj_games.items['totalitems'] == '0':
+                # 202 Response produces AttributeError -- 202 is common on your first call to a given username in a day
                 if __name__ == '__main__':
-                    print("User has no collection data")
-                    self.name = input(".  Enter User Name: ")
-                    check = True
+                    print("Response 202.  Retrying in 3 seconds...")
+                    time.sleep(3)
+                    continue
                 else:
-                    return 3
-
-
-        self.__pre_build(obj_games, obj_full, 0)
-        self.__pre_build(obj_expansion, obj_full, 1)
+                    return 2
+            break
 
         if not __name__ == '__main__':
             return 0
 
-    def out_formatted(self, f_list, f):
+    def out_formatted(self, f_list, f, s):
         count = 0
+        if s:
+            f_list = self.sort_by(f_list)
+
         if f:
             for el in f_list:
+                print("-" * 40)
                 for keys in el:
                     if type(el[keys]) == list:
                         for j in range(0, len(el[keys]), 2):
                             print(f'{el[keys][j]}: {el[keys][j+1]}')
                     else:
                         print(f'{keys}: {el[keys]}')
-                print("-" * 40)
-                count = count + 1
+                count += 1
+            print("-" * 40)
             print(f'Total:  {count}')
         else:
             for i in range(len(f_list)):
                 print("-" * 40)
                 print(f"name: {f_list[i]['name']}\nmsrp: {f_list[i]['msrp']}\nprice: {f_list[i]['price']}\n" +
                       f"link: {f_list[i]['amzlink']}")
+                count += 1
+            print("-" * 40)
+            print(f'Total:  {count}')
 
     @staticmethod
     def usage(t):
@@ -180,21 +187,26 @@ class Collection:
         else:
             print('''Usage:
              g: output your owned games's name, msrp, price and amazon link
-                 g -f: output full information
              w: output your wish list
-                 w -f: output full information
              e: output your expansions
-                 e -f: output full information
+             Flags:
+                -f: output full information (ex: g -f)
+                -s: sort list by a key before output (ex: w -s)
+                    -f and -s can be combined.
              q: quit
             -h: help''')
 
-    def sort_by(self, sort_type):
-        while sort_type not in self.wish_list[0]:
-            sort_type = input(f"Enter a key. Usage -- {self.wish_list[0].keys()}: ")
+    def sort_by(self, col_list):
+        sort_type = input("Enter sort key: ")
+        while sort_type not in col_list[0]:
+            sort_type = input(f"Enter a key. Usage -- {col_list[0].keys()}: ")
             try:
-                self.wish_list = sorted(self.wish_list, key=lambda game: int(game[sort_type]))
-            except TypeError:
-                self.wish_list = sorted(self.wish_list, key=lambda game: game[sort_type])
+                #col_list = sorted(col_list, key=lambda game: int(game[sort_type]))
+                col_list.sort(key=lambda game: int(game[sort_type]))
+            except TypeError or ValueError:
+                #col_list = sorted(col_list, key=lambda game: game[sort_type])
+                col_list.sort(key=lambda game: game[sort_type])
+        return col_list
 
     def load_price(self, sub_list=None):
         i = 1
@@ -212,8 +224,9 @@ class Collection:
             amazon = json.loads(response.text)
 
             # Visual Output for Command Line
-            self.__loading_display(i, len(sub_list))
-            i += 1
+            if __name__ == "__main__":
+                self.__loading_display(i, len(sub_list))
+                i += 1
 
             try:
                 keys = list(amazon.keys())
@@ -247,6 +260,8 @@ class Collection:
 
 
 def main():
+    to_sort = False
+    # TODO getopt
     try:
         if len(sys.argv) < 2:
             print('''
@@ -271,11 +286,11 @@ def main():
 
     table = Collection(user_name)
     table.load()
-    print("LOADING GAME LIST...")
+    print(f"LOADING GAME LIST PRICES FOR {len(table.games)} GAMES...")
     table.load_price()
-    print("LOADING WISH LIST...")
+    print(f"LOADING WISH LIST PRICES FOR {len(table.wish_list)} GAMES...")
     table.load_price(table.wish_list)
-    print("LOADING EXPANSIONS...")
+    print(f"LOADING EXPANSIONS PRICES FOR {len(table.expansions)} EXPANSIONS...")
     table.load_price(table.expansions)
 
     while True:
@@ -283,7 +298,7 @@ def main():
         cmd = input("Command: ").lower()
         c_f = cmd.split(" ")
 
-        if len(c_f) > 2:
+        if len(c_f) > 3:
             c_f = "-h"
 
         if "-f" in c_f:
@@ -291,12 +306,16 @@ def main():
         else:
             full = 0
 
+        # TODO: get sort_by to work
+        if "-s" in c_f:
+            to_sort = True
+
         if 'w' in c_f:
-            table.out_formatted(table.wish_list, full)
+            table.out_formatted(table.wish_list, full, to_sort)
         elif 'g' in c_f:
-            table.out_formatted(table.games, full)
+            table.out_formatted(table.games, full, to_sort)
         elif 'e' in c_f:
-            table.out_formatted(table.expansions, full)
+            table.out_formatted(table.expansions, full, to_sort)
         elif 'q' in c_f:
             sys.exit()
         elif '-h' in c_f:
