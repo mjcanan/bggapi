@@ -186,7 +186,7 @@ class Collection:
     @staticmethod
     def usage(t):
         if t:
-            print("Usage: enter a valid BoardGameGeek user name to continue.  Press q to quit")
+            print("Usage: bggapi.py [user name] [-h]")
         else:
             print('''Usage:
              g: output your owned games's name, msrp, price and amazon link
@@ -276,26 +276,22 @@ def main(argv):
     to_sort = False
 
     try:
-        if len(argv) < 2:
-            print('''
-            *-*-*-*-*-*-BOARD GAME GEEK COLLECTION PRICE LIST-*-*-*-*-*-*
-            * This program will load your BoardGameGeek collection and  *
-            * create a list of all your owned games, wish list games,   *
-            * and expansions, with all data associated therewith,       *
-            * including MSRP, list price and an Amazon link.            *
-            * Enter -h for help using the program.                      *
-            *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*\n''')
-            user_name = input("Enter User Name: ")
+        if len(argv) < 2 or '-h' in argv:
+            Collection.usage(True)
+            sys.exit()
         else:
             user_name = argv[1]
+            print('''
+                        *-*-*-*-*-*-BOARD GAME GEEK COLLECTION PRICE LIST-*-*-*-*-*-*
+                        * This program will load your BoardGameGeek collection and  *
+                        * create a list of all your owned games, wish list games,   *
+                        * and expansions, with all data associated therewith,       *
+                        * including MSRP, list price and an Amazon link.            *
+                        * Enter -h for help using the program.                      *
+                        *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*\n''')
     except IndexError:
-        user_name = input("Enter User Name: ")
-
-    if user_name.lower() == 'q':
-        sys.exit()
-    elif user_name.lower() == '-h':
         Collection.usage(True)
-        user_name = input("Enter User Name: ")
+        sys.exit(1)
 
     table = Collection(user_name)
     table.load()
