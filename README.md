@@ -1,6 +1,6 @@
 # Board Game Geek XML Parser
 ## Description
-This program interacts with boardgamegeek.com's XML API.  By providing your username, this program will make call the API and building a list of dictionaries composed of your owned games, owned expansions, and wish list.  This program will also obtain pricing data and an Amazon link to your games.  Output can be in abbreviated or long form.
+This program interacts with boardgamegeek.com's XML API.  By providing your username, this program will call the API and build a list of dictionaries composed of your owned games, owned expansions, and wish list.  This program will also obtain pricing data and an Amazon link to your games.  Output can be in abbreviated or long form.
 ## Usage
 <pre>bggapi.py [user name] [-h]</pre>
 ## Commands
@@ -86,3 +86,7 @@ amzlink: https://www.amazon.com/dp/B000K8FYAS?tag=itemtext-boardgamegeek-20&link
 Total:  12
 ----------------------------------------
 Command:</pre>
+## Goals
+- [ ] GUI
+- [ ] Better argument parsing
+- [ ] More Output Formats
