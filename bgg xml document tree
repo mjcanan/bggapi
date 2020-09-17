@@ -1,0 +1,53 @@
+# Description
+    - This is an explanation of the xml structure for XMLAPI2 at boardgamegeek.com (api.geekdo.com/xmlapi2)
+    - WIP to be updated as I explore the api more
+
+# Generally
+    - All queries begin with <items> tag with the attrib[totalitems, termsofuse, pubdate]
+    - <items> has the child <item>, which is always of objectype "thing".
+        <item> has the attrib[objecttype, objectid, subtype, collid]
+            subtype and objectid are the id for the landing page for the game in html (e.g. bgg.com/[subtype]/[objectid]
+    - <name>, <yearpublished>, <image>, <thumbnail>, <numplays> and <comment> have cdata, denoted by ...
+    - children elements are indented under their parent, and attributes are in []
+
+# Status
+    - The status values (excluding wishlistpriority) will only have the values 1 or 0 (true or false)
+    - wishlistpriority operates on a 1-5 value system (low to high), and will only appear as an attribute if wishlist=1
+
+# BGG XML Tree Structure for collection by username
+    <items [see Generally]>
+        <item [see Generally]>
+            <name[sortindex]>...</name>
+            <yearpublished>...</yearpublished>
+            <image>...</image>
+            <thumbnail>...</thumbnail>
+            <stats[minplayers, maxplayers, minplaytime, maxplaytime, playingtime, numowned]>
+                <rating[value]>
+                    <usersrated[value]/>
+                    <average[value]/>
+                    <bayesaverage[value]/>
+                    <stddev[value]/>
+                    <median[value]/>
+                </rating>
+            </stats>
+           <status[own,prevowned,fortrade,want,wanttoplay,wanttobuy,wishlist,wishlistpriority,preordered,lastmodified]/>
+           <numplays>...</numplays>
+           <comment>...</comment>
+        </item>
+
+    - The <stats> element contains data pulled from all of BGG (numowned, for example, refers to how many total users
+      own that game).
+    - The <rating> element has a value attribute related to the user, but contains children elements with value
+      attributes that are pulled from all of BGG.  So far, I haven't found a game that had a <median> value that
+      wasn't 0.
+
+# Board Games, Expansions, Ratings
+    - From the documentation: Note that the default (or using subtype=boardgame) returns both boardgame and
+      boardgameexpansion's in your collection... but incorrectly gives subtype=boardgame for the expansions.
+      Workaround is to use excludesubtype=boardgameexpansion and make a 2nd call asking for subtype=boardgameexpansion.
+    - BGG does not return your rating information if you pass any arguments in addition to user name.  This means a
+      third call to the api just to get ratings.  No reason is given in the documentation for why ratings are excluded
+      when querying with more specific information.
+
+# BGG Returns 202
+    - BGG returns code 202 if it has queued your request.  Per documentation, you need to retry the request.
