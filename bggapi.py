@@ -3,6 +3,7 @@ import json
 import requests
 import time
 import sys
+import argparse
 '''
 THE INTENT WITH THIS BRANCH IS TO TURN THIS CODE INTO A SCRIPT THAT WILL GET ME THE CURRENT PRICES
 FOR ALL MY GAMES, AND PROVIDE A LINK - TKINTER FOR GUI
@@ -271,11 +272,11 @@ class Collection:
             el['amzlink'] = "n/a"
 
 
-def main():
+def main(argv):
     to_sort = False
-    # TODO getopt
+
     try:
-        if len(sys.argv) < 2:
+        if len(argv) < 2:
             print('''
             *-*-*-*-*-*-BOARD GAME GEEK COLLECTION PRICE LIST-*-*-*-*-*-*
             * This program will load your BoardGameGeek collection and  *
@@ -286,7 +287,7 @@ def main():
             *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*\n''')
             user_name = input("Enter User Name: ")
         else:
-            user_name = sys.argv[1]
+            user_name = argv[1]
     except IndexError:
         user_name = input("Enter User Name: ")
 
@@ -336,4 +337,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv)
