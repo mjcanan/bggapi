@@ -192,6 +192,7 @@ class Collection:
              g: output your owned games's name, msrp, price and amazon link
              w: output your wish list
              e: output your expansions
+             n: output all games with number of plays
              Flags:
                 -f: output full information (ex: g -f)
                 -s: sort list by a key before output (ex: w -s)
@@ -199,8 +200,7 @@ class Collection:
              q: quit
             -h: help''')
 
-    def sort_by(self, col_list):
-        sort_type = ""
+    def sort_by(self, col_list, sort_type=""):
         i = 0
         while sort_type not in col_list[0]:
             sort_type = input(f"Enter a key. Press k for keys: ")
@@ -220,6 +220,12 @@ class Collection:
             return [err,4]
 
         return col_list
+
+# TODO: add output for individual games and adjust formatting
+    def plays(self):
+        play_list = self.sort_by(self.games, 'num_plays')
+        for i in range(len(play_list)):
+            print(f"{play_list[i]['num_plays']} - {play_list[i]['name']}")
 
     def load_price(self, sub_list=None):
         i = 1
@@ -322,6 +328,8 @@ def main(argv):
             table.out_formatted(table.wish_list, full, to_sort)
         elif 'g' in c_f:
             table.out_formatted(table.games, full, to_sort)
+        elif 'n' in c_f:
+            table.plays()
         elif 'e' in c_f:
             table.out_formatted(table.expansions, full, to_sort)
         elif 'q' in c_f:
