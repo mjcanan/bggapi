@@ -199,7 +199,7 @@ class Collection:
                     -f and -s can be combined.
              q: quit
             -h: help''')
-
+# TODO: bug with msrp sort - error check all sorts again
     def sort_by(self, col_list, sort_type=""):
         i = 0
         while sort_type not in col_list[0]:
@@ -223,7 +223,9 @@ class Collection:
 
 # TODO: add output for individual games and adjust formatting
     def plays(self):
+        t = time.time()
         play_list = self.sort_by(self.games, 'num_plays')
+        print("-" * 40 + f"\nNumber of Plays as of {time.strftime('%m-%d-%Y %H:%M %Z', time.localtime(t))}\n" + "-" * 40)
         for i in range(len(play_list)):
             print(f"{play_list[i]['num_plays']} - {play_list[i]['name']}")
 
