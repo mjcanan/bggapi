@@ -3,7 +3,7 @@ import json
 import requests
 import time
 import sys
-import argparse
+#import argparse
 '''
 THE INTENT WITH THIS BRANCH IS TO TURN THIS CODE INTO A SCRIPT THAT WILL GET ME THE CURRENT PRICES
 FOR ALL MY GAMES, AND PROVIDE A LINK - TKINTER FOR GUI
@@ -37,29 +37,43 @@ class Collection:
         try:
             pub_year = p.yearpublished.cdata
         except AttributeError:
-            pub_year = None
+            pub_year = -1
+
+        if fp.stats.rating['value'] == 'N/A':
+            rating = -1
+        else:
+            rating = fp.stats.rating['value']
 
         _d = {
             'name': p.name.cdata,
             'bgg_id': p['objectid'],
             'year_published': pub_year,
             'min_players': fp.stats['minplayers'],
-            'max_players': fp.stats['maxplayers'],
+            'max_players': self.__check_none(fp.stats['maxplayers']),
             'min_play_time': fp.stats['minplaytime'],
-            'max_play_time': fp.stats['maxplaytime'],
+            'max_play_time': self.__check_none(fp.stats['maxplaytime']),
             'total_owned': fp.stats['numowned'],
-            'rating': fp.stats.rating['value'],
+            'rating': rating,
             'total_ratings': fp.stats.rating.usersrated['value'],
             'average_rating': fp.stats.rating.average['value'],
-            'bayes_average:': fp.stats.rating.bayesaverage['value'],
+            'bayes_average': fp.stats.rating.bayesaverage['value'],
             'std_dev': fp.stats.rating.stddev['value'],
             'rank': rank_list,
             'own': p.status['own'],
             'wish_list': p.status['wishlist'],
             'num_plays': p.numplays.cdata,
+            'msrp': 0,
+            'price': 0,
+            'amzlink': ""
         }
 
         return _d
+
+    def __check_none(self, value):
+        if value is None:
+            return -1
+        else:
+            return value
 
     def __loading_display(self, i, total):
         status = str("Loading " + str(i) + " of " + str(total))
@@ -199,7 +213,7 @@ class Collection:
                     -f and -s can be combined.
              q: quit
             -h: help''')
-# TODO: bug with msrp sort - error check all sorts again
+# TODO: more elaborate search - should not allow searches for all values - error when searching by amzlink
     def sort_by(self, col_list, sort_type=""):
         i = 0
         while sort_type not in col_list[0]:
@@ -208,16 +222,15 @@ class Collection:
                 for key in col_list[0].keys():
                     print(f"{key} | ", end="")
                     i += 1
-                    if not i%5:
+                    if not i % 5:
                         print("")
         try:
             col_list = sorted(col_list, key=lambda game: float(game[sort_type]))
-            #col_list.sort(key=lambda game: int(game[sort_type]))
-        except TypeError:
+        except:
             col_list = sorted(col_list, key=lambda game: game[sort_type])
             #col_list.sort(key=lambda game: game[sort_type])
-        except ValueError as err:
-            return [err,4]
+        #except ValueError as err:
+        #    return [err, 4]
 
         return col_list
 
@@ -263,26 +276,34 @@ class Collection:
                     amazon_price = amazon[region]['defaultprice']
                     amazon_msrp = amazon[region]['listprice']
                     amazon_link = amazon[region]['url']
+
+                    # Handling different data types and non-uniform return values
+                    if amazon_msrp is None:
+                        amazon_msrp = 0
                     if amazon_price == "(unavailable)":
-                        el['msrp'] = "n/a"
-                        el['price'] = "n/a"
+                        el['msrp'] = 0
+                        el['price'] = 0
                         el['amzlink'] = amazon_link
                         continue
                     else:
-                        el['msrp'] = amazon_msrp
-                        el['price'] = amazon_price
+                        # Removing money symbols to avoid errors during sort
+                        # TODO: check for currency type?
+                        amazon_msrp = str(amazon_msrp).replace("$", "").replace("£", "").replace(",", ".").replace("€", "")
+                        amazon_price = str(amazon_price).replace("$", "").replace("£", "").replace(",", ".").replace("€", "")
+                        el['msrp'] = float(amazon_msrp)
+                        el['price'] = float(amazon_price)
                         el['amzlink'] = amazon_link
                         continue
                 except KeyError:
                     pass
-            el['msrp'] = "n/a"
-            el['price'] = "n/a"
+            el['msrp'] = -1
+            el['price'] = -1
             el['amzlink'] = "n/a"
 
 
 def main(argv):
-    to_sort = False
 
+    # TODO: argparse instead of sys.argv
     try:
         if len(argv) < 2 or '-h' in argv:
             Collection.usage(True)
@@ -311,6 +332,7 @@ def main(argv):
     table.load_price(table.expansions)
 
     while True:
+        to_sort = False
         print("-" * 40)
         cmd = input("Command: ").lower()
         c_f = cmd.split(" ")
