@@ -171,6 +171,7 @@ class Collection:
 
     def out_formatted(self, f_list, f, s, g):
         count = 0
+        check = True
         if s:
             f_list = self.sort_by(f_list)
             if f_list[1] == 4:
@@ -182,7 +183,12 @@ class Collection:
                 if g.lower() in el['name'].lower():
                     temp_list.append(el)
                     f = True
-            f_list = temp_list
+                    check = False
+            if check:
+                print("No game found.  Please check your spelling and try again")
+                return
+            else:
+                f_list = temp_list
 
         if f:
             for el in f_list:
