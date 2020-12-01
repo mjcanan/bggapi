@@ -234,13 +234,20 @@ class Collection:
 
         return col_list
 
-# TODO: add output for individual games and adjust formatting
-    def plays(self):
+# TODO: add output for individual games and adjust formatting -- MAKE API CALL TO PLAYS INSTEAD
+    def plays(self, g):
         t = time.time()
-        play_list = self.sort_by(self.games, 'num_plays')
-        print("-" * 40 + f"\nNumber of Plays as of {time.strftime('%m-%d-%Y %H:%M %Z', time.localtime(t))}\n" + "-" * 40)
-        for i in range(len(play_list)):
-            print(f"{play_list[i]['num_plays']} - {play_list[i]['name']}")
+        if not g:
+            play_list = self.sort_by(self.games, 'num_plays')
+            print("-" * 40 + f"\nNumber of Plays as of {time.strftime('%m-%d-%Y %H:%M %Z', time.localtime(t))}\n" + "-" * 40)
+            for i in range(len(play_list)):
+                print(f"{play_list[i]['num_plays']} - {play_list[i]['name']}")
+        else:
+            for game in self.games:
+                if g == game['name']:
+                    print(f"{game['name']} - Total Plays: {game['num_plays']}")
+                    return
+            print("No game found.  Please check your spelling and try again.")
 
     def load_price(self, sub_list=None):
         i = 1
@@ -300,6 +307,9 @@ class Collection:
             el['price'] = -1
             el['amzlink'] = "n/a"
 
+    # def load_plays(self):
+    #     plays_url = str("http://api.geekdo.com/xmlapi2/plays?username=" + self.name)
+    #     plays_list = untangle.parse(plays_url)
 
 def main(argv):
 
@@ -322,6 +332,7 @@ def main(argv):
         Collection.usage(True)
         sys.exit(1)
 
+#TODO: change "Collection" to "Player" and have Collection and Plays inherit from Player class
     table = Collection(user_name)
     table.load()
     print(f"LOADING GAME LIST PRICES FOR {len(table.games)} GAMES...")
@@ -353,7 +364,11 @@ def main(argv):
         elif 'g' in c_f:
             table.out_formatted(table.games, full, to_sort)
         elif 'n' in c_f:
-            table.plays()
+            if '-g' in c_f:
+                g = input("Choose a game: ")
+                table.plays(g)
+            else:
+                table.plays(0)
         elif 'e' in c_f:
             table.out_formatted(table.expansions, full, to_sort)
         elif 'q' in c_f:
