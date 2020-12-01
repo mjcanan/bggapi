@@ -211,6 +211,7 @@ class Collection:
                 -f: output full information (ex: g -f)
                 -s: sort list by a key before output (ex: w -s)
                     -f and -s can be combined.
+                -g: when used with "n" command, will output number of plays for game chosen by user
              q: quit
             -h: help''')
 # TODO: more elaborate search - should not allow searches for all values - error when searching by amzlink
