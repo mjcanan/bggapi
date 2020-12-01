@@ -169,13 +169,21 @@ class Collection:
         if not __name__ == '__main__':
             return 0
 
-    def out_formatted(self, f_list, f, s):
+    def out_formatted(self, f_list, f, s, g):
         count = 0
         if s:
             f_list = self.sort_by(f_list)
             if f_list[1] == 4:
                 print(f_list[0])
                 return
+        if g:
+            temp_list = []
+            for el in f_list:
+                if g.lower() in el['name'].lower():
+                    temp_list.append(el)
+                    f = True
+            f_list = temp_list
+
         if f:
             for el in f_list:
                 print("-" * 40)
@@ -211,7 +219,7 @@ class Collection:
                 -f: output full information (ex: g -f)
                 -s: sort list by a key before output (ex: w -s)
                     -f and -s can be combined.
-                -g: when used with "n" command, will output number of plays for game chosen by user
+                -g: outputs information for an individual user-chosen game
              q: quit
             -h: help''')
 # TODO: more elaborate search - should not allow searches for all values - error when searching by amzlink
@@ -235,9 +243,10 @@ class Collection:
 
         return col_list
 
-# TODO: add output for individual games and adjust formatting -- MAKE API CALL TO PLAYS INSTEAD
+# TODO:  MAKE API CALL TO PLAYS INSTEAD
     def plays(self, g):
         t = time.time()
+        check = False
         if not g:
             play_list = self.sort_by(self.games, 'num_plays')
             print("-" * 40 + f"\nNumber of Plays as of {time.strftime('%m-%d-%Y %H:%M %Z', time.localtime(t))}\n" + "-" * 40)
@@ -245,10 +254,14 @@ class Collection:
                 print(f"{play_list[i]['num_plays']} - {play_list[i]['name']}")
         else:
             for game in self.games:
-                if g == game['name']:
+                if g.lower() in game['name'].lower():
                     print(f"{game['name']} - Total Plays: {game['num_plays']}")
-                    return
-            print("No game found.  Please check your spelling and try again.")
+                    check = True
+            if not check:
+                print("No games found.  Please check your spelling and try again")
+
+            return
+
 
     def load_price(self, sub_list=None):
         i = 1
@@ -361,17 +374,29 @@ def main(argv):
             to_sort = True
 
         if 'w' in c_f:
-            table.out_formatted(table.wish_list, full, to_sort)
+            if '-g' in c_f:
+                g = input("Choose a game: ")
+                table.out_formatted(table.wish_list, full, to_sort, g)
+            else:
+                table.out_formatted(table.wish_list, full, to_sort, False)
         elif 'g' in c_f:
-            table.out_formatted(table.games, full, to_sort)
+            if '-g' in c_f:
+                g = input("Choose a game: ")
+                table.out_formatted(table.games, full, to_sort, g)
+            else:
+                table.out_formatted(table.games, full, to_sort, False)
         elif 'n' in c_f:
             if '-g' in c_f:
                 g = input("Choose a game: ")
                 table.plays(g)
             else:
-                table.plays(0)
+                table.plays(False)
         elif 'e' in c_f:
-            table.out_formatted(table.expansions, full, to_sort)
+            if '-g' in c_f:
+                g = input("Choose a game: ")
+                table.out_formatted(table.expansions, full, to_sort, g)
+            else:
+                table.out_formatted(table.expansions, full, to_sort, False)
         elif 'q' in c_f:
             sys.exit()
         elif '-h' in c_f:
