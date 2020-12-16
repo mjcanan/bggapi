@@ -16,6 +16,7 @@ class Collection:
         self.games = []
         self.expansions = []
         self.wish_list = []
+        self.play_list = []
         self.total_owned = 0
         self.total_wish_list = 0
         self.total_exp = 0
@@ -327,9 +328,32 @@ class Collection:
             el['price'] = -1
             el['amzlink'] = "n/a"
 
-    # def load_plays(self):
-    #     plays_url = str("http://api.geekdo.com/xmlapi2/plays?username=" + self.name)
-    #     plays_list = untangle.parse(plays_url)
+    def load_plays(self):
+
+        plays_url = str("http://api.geekdo.com/xmlapi2/plays?username=" + self.name)
+        plays_list = untangle.parse(plays_url)
+
+        if plays_list.plays['total'] == '0':
+            return
+
+        for i in range(len(plays_list.plays)):
+            play_path = plays_list.plays.play[i]
+
+            # Handling when no comments are entered
+            try:
+                comment = play_path.comments.cdata
+            except AttributeError:
+                comment = 'no comment'
+
+            _play = {
+                'id': play_path['id'],
+                'date': play_path['date'],
+                'quantity': play_path['quantity'],
+                'game': play_path.item['name'],
+                'comment': comment
+            }
+            self.play_list.append(_play)
+
 
 def main(argv):
 
@@ -355,6 +379,7 @@ def main(argv):
 #TODO: change "Collection" to "Player" and have Collection and Plays inherit from Player class
     table = Collection(user_name)
     table.load()
+    table.load_plays()
     print(f"LOADING GAME LIST PRICES FOR {len(table.games)} GAMES...")
     table.load_price()
     print(f"LOADING WISH LIST PRICES FOR {len(table.wish_list)} GAMES...")
