@@ -118,9 +118,15 @@ class Collection:
         no_expansion = "&excludessubtype=boardgameexpansion"
         expansion = "&subtype=boardgameexpansion"
         full_stats = "&stats=1"
+        check_202 = 0
 
         # Three calls are necessary due to quirks in boardgamegeek.com's API - see bgg xml document tree.txt
         while True:
+            if check_202 > 3:
+                if __name__ == '__main__':
+                    print("Too many retries.  Exiting.")
+                    sys.exit()
+
             api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name)
             obj_full = untangle.parse(api_url + full_stats)
             obj_games = untangle.parse(api_url + no_expansion)
@@ -161,6 +167,7 @@ class Collection:
                 if __name__ == '__main__':
                     print("Response 202.  Retrying in 3 seconds...")
                     time.sleep(3)
+                    check_202 += 1
                     continue
                 else:
                     return 2
