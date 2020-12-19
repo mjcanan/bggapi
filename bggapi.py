@@ -125,7 +125,7 @@ class Collection:
             if check_202 > 3:
                 if __name__ == '__main__':
                     print("Too many retries.  Exiting.")
-                    sys.exit()
+                    sys.exit(4)
 
             api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name)
             obj_full = untangle.parse(api_url + full_stats)
@@ -256,7 +256,6 @@ class Collection:
 
         return col_list
 
-# TODO:  MAKE API CALL TO PLAYS INSTEAD
     def plays(self, g):
         t = time.time()
         check = False
@@ -275,7 +274,6 @@ class Collection:
 
             return
 
-
     def load_price(self, sub_list=None):
         i = 1
 
@@ -289,7 +287,15 @@ class Collection:
             el_id = el['bgg_id']
             url = ('https://www.boardgamegeek.com/api/amazon/textads?objectid=' + el_id + '&objecttype=thing')
             response = requests.get(url)
-            amazon = json.loads(response.text)
+            # Handling decoding error (occurred only once in testing)
+            try:
+                amazon = json.loads(response.text)
+                # TODO: error handle for 202 responses at this time?
+            except json.decoder.JSONDecodeError:
+                el['msrp'] = -1
+                el['price'] = -1
+                el['amzlink'] = "n/a"
+                continue
 
             # Visual Output for Command Line
             if __name__ == "__main__":
@@ -321,9 +327,11 @@ class Collection:
                         continue
                     else:
                         # Removing money symbols to avoid errors during sort
-                        # TODO: check for currency type?
-                        amazon_msrp = str(amazon_msrp).replace("$", "").replace("£", "").replace(",", ".").replace("€", "")
-                        amazon_price = str(amazon_price).replace("$", "").replace("£", "").replace(",", ".").replace("€", "")
+                        # (using replace method to avoid importing re)
+                        amazon_msrp = str(amazon_msrp).replace("$", "").replace("£", "")\
+                            .replace(",", ".").replace("€", "").replace("CDN","")
+                        amazon_price = str(amazon_price).replace("$", "").replace("£", "")\
+                            .replace(",", ".").replace("€", "").replace("CDN","")
                         el['msrp'] = float(amazon_msrp)
                         el['price'] = float(amazon_price)
                         el['amzlink'] = amazon_link
