@@ -177,8 +177,12 @@ class Collection:
             return 0
 
     def out_formatted(self, f_list, f, s, g):
+        # Outputs your games/wishlist/expansions in an easier to read format
+        # if "g", then this function will output a single game
+        # if "f", prints out the full list of details for your lists, otherwise prints abridged information
+        # if "s", will call sort_by method and sort your list
         count = 0
-        check = True
+        no_game_found = True
         if s:
             f_list = self.sort_by(f_list)
             if f_list[1] == 4:
@@ -187,17 +191,19 @@ class Collection:
         if g:
             temp_list = []
             for el in f_list:
+                # returns multiple results -- better chance of getting something returned this way
                 if g.lower() in el['name'].lower():
                     temp_list.append(el)
                     f = True
-                    check = False
-            if check:
+                    no_game_found = False
+            if no_game_found:
                 print("No game found.  Please check your spelling and try again")
                 return
             else:
                 f_list = temp_list
 
         if f:
+            # prints all data in the dictionary
             for el in f_list:
                 print("-" * 40)
                 for keys in el:
@@ -210,6 +216,7 @@ class Collection:
             print("-" * 40)
             print(f'Total:  {count}')
         else:
+            # printing only abridge info unless "f" - name, msrp, price and amazon link
             for i in range(len(f_list)):
                 print("-" * 40)
                 print(f"name: {f_list[i]['name']}\nmsrp: {f_list[i]['msrp']}\nprice: {f_list[i]['price']}\n" +
@@ -220,6 +227,7 @@ class Collection:
 
     @staticmethod
     def usage(t):
+        # "t" for usage on the command, not "t" for usage while in __main__
         if t:
             print("Usage: bggapi.py [user name] [-h]")
         else:
@@ -235,6 +243,7 @@ class Collection:
                 -g: outputs information for an individual user-chosen game
              q: quit
             -h: help''')
+
 # TODO: more elaborate search - should not allow searches for all values - error when searching by amzlink
     def sort_by(self, col_list, sort_type=""):
         i = 0
@@ -258,18 +267,19 @@ class Collection:
 
     def plays(self, g):
         t = time.time()
-        check = False
+        any_games = False
         if not g:
             play_list = self.sort_by(self.games, 'num_plays')
-            print("-" * 40 + f"\nNumber of Plays as of {time.strftime('%m-%d-%Y %H:%M %Z', time.localtime(t))}\n" + "-" * 40)
+            print("-" * 40 + f"\nNumber of Plays as of {time.strftime('%m-%d-%Y %H:%M %Z', time.localtime(t))}\n"
+                  + "-" * 40)
             for i in range(len(play_list)):
                 print(f"{play_list[i]['num_plays']} - {play_list[i]['name']}")
         else:
             for game in self.games:
                 if g.lower() in game['name'].lower():
                     print(f"{game['name']} - Total Plays: {game['num_plays']}")
-                    check = True
-            if not check:
+                    any_games = True
+            if not any_games:
                 print("No games found.  Please check your spelling and try again")
 
             return
@@ -342,9 +352,6 @@ class Collection:
             el['price'] = -1
             el['amzlink'] = "n/a"
 
-    # def load_plays(self):
-    #     plays_url = str("http://api.geekdo.com/xmlapi2/plays?username=" + self.name)
-    #     plays_list = untangle.parse(plays_url)
 
 def main(argv):
 
@@ -367,7 +374,7 @@ def main(argv):
         Collection.usage(True)
         sys.exit(1)
 
-#TODO: change "Collection" to "Player" and have Collection and Plays inherit from Player class
+# TODO: change "Collection" to "Player" and have Collection and Plays inherit from Player class
     table = Collection(user_name)
     table.load()
     print(f"LOADING GAME LIST PRICES FOR {len(table.games)} GAMES...")
