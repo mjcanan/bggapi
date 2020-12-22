@@ -44,6 +44,7 @@ class Collection:
         else:
             rating = fp.stats.rating['value']
 
+        # turning bgg untangled xml data in a dictionary for use by user
         _d = {
             'name': p.name.cdata,
             'bgg_id': p['objectid'],
@@ -70,6 +71,7 @@ class Collection:
         return _d
 
     def __check_none(self, value):
+        # a function for handling None values for games with no maximum players and/or no maximum play time
         if value is None:
             return -1
         else:
