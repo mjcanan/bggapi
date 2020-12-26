@@ -3,6 +3,7 @@ import json
 import requests
 import time
 import sys
+import math
 #import argparse
 '''
 THE INTENT WITH THIS BRANCH IS TO TURN THIS CODE INTO A SCRIPT THAT WILL GET ME THE CURRENT PRICES
@@ -17,6 +18,7 @@ class Collection:
         self.expansions = []
         self.wish_list = []
         self.play_list = []
+        # TODO: have a total_owned and a total_games to account for 1. all objects owned and 2. all base games owned
         self.total_owned = 0
         self.total_wish_list = 0
         self.total_exp = 0
@@ -121,9 +123,11 @@ class Collection:
         full_stats = "&stats=1"
 
         # Three calls are necessary due to quirks in boardgamegeek.com's API - see bgg xml document tree.txt
+        # Some expansions still make it in to the games list due to mislabeling by BGG
         while True:
             api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name)
             obj_full = untangle.parse(api_url + full_stats)
+            # TODO: excludesubstype does not work?  getting expansions in my game list...
             obj_games = untangle.parse(api_url + no_expansion)
             obj_expansion = untangle.parse(api_url + expansion)
 
@@ -166,6 +170,16 @@ class Collection:
                 else:
                     return 2
             break
+        # TODO: Hack to get expansions out of game list -- need to fix later!
+        to_remove = []
+        for game in self.games:
+            for expansion in self.expansions:
+                if game['name'] == expansion['name']:
+                    to_remove.append(game)
+                    break
+        for game in to_remove:
+            self.games.remove(game)
+            self.total_owned -= 1
 
         if not __name__ == '__main__':
             return 0
@@ -329,30 +343,42 @@ class Collection:
             el['amzlink'] = "n/a"
 
     def load_plays(self):
-
-        plays_url = str("http://api.geekdo.com/xmlapi2/plays?username=" + self.name)
+        # only returns 100 results per page
+        page = 1
+        plays_url = str("http://api.geekdo.com/xmlapi2/plays?username=" + self.name + "&page=" + str(page))
         plays_list = untangle.parse(plays_url)
 
-        if plays_list.plays['total'] == '0':
-            return
+        # would like to avoid importing math if possible - this determines number of pages
+        page_num = math.ceil(int(plays_list.plays['total'])/100)
 
-        for i in range(len(plays_list.plays)):
-            play_path = plays_list.plays.play[i]
+        while page_num > 0:
+            if plays_list.plays['total'] == '0':
+                return
 
-            # Handling when no comments are entered
-            try:
-                comment = play_path.comments.cdata
-            except AttributeError:
-                comment = 'no comment'
+            for i in range(len(plays_list.plays)):
+                play_path = plays_list.plays.play[i]
 
-            _play = {
-                'id': play_path['id'],
-                'date': play_path['date'],
-                'quantity': play_path['quantity'],
-                'game': play_path.item['name'],
-                'comment': comment
-            }
-            self.play_list.append(_play)
+                # Handling when no comments are entered
+                try:
+                    comment = play_path.comments.cdata
+                except AttributeError:
+                    comment = 'no comment'
+
+                _play = {
+                    'id': play_path['id'],
+                    'date': play_path['date'],
+                    'quantity': play_path['quantity'],
+                    'game': play_path.item['name'],
+                    'comment': comment
+                }
+                self.play_list.append(_play)
+            # If page_num > 0, make another api call to get the next page of play results
+            page += 1
+            page_num -= 1
+            #TODO: error handle for 429 and 202 errors
+            plays_url = str("http://api.geekdo.com/xmlapi2/plays?username=" + self.name + "&page=" + str(page))
+            # TODO: make the untangle part here a separate function returning results -- include 429 and 202 error handling there.
+            plays_list = untangle.parse(plays_url)
 
 
 def main(argv):
@@ -380,12 +406,12 @@ def main(argv):
     table = Collection(user_name)
     table.load()
     table.load_plays()
-    print(f"LOADING GAME LIST PRICES FOR {len(table.games)} GAMES...")
-    table.load_price()
-    print(f"LOADING WISH LIST PRICES FOR {len(table.wish_list)} GAMES...")
-    table.load_price(table.wish_list)
-    print(f"LOADING EXPANSIONS PRICES FOR {len(table.expansions)} EXPANSIONS...")
-    table.load_price(table.expansions)
+  #  print(f"LOADING GAME LIST PRICES FOR {len(table.games)} GAMES...")
+   # table.load_price()
+   # print(f"LOADING WISH LIST PRICES FOR {len(table.wish_list)} GAMES...")
+   # table.load_price(table.wish_list)
+   # print(f"LOADING EXPANSIONS PRICES FOR {len(table.expansions)} EXPANSIONS...")
+   # table.load_price(table.expansions)
 
     while True:
         to_sort = False
