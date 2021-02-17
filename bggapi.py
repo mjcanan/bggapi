@@ -283,7 +283,6 @@ class Collection:
 
             return
 
-
     def load_price(self, sub_list=None):
         i = 1
 
