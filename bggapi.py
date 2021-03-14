@@ -345,7 +345,10 @@ class Collection:
                         amazon_price = str(amazon_price).replace("$", "").replace("£", "")\
                             .replace(",", ".").replace("€", "").replace("CDN","")
                         el['msrp'] = float(amazon_msrp)
-                        el['price'] = float(amazon_price)
+                        try:
+                        	el['price'] = float(amazon_price)
+                        except ValueError as e:
+                        	el['price'] = -1
                         el['amzlink'] = amazon_link
                         continue
                 except KeyError:
