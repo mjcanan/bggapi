@@ -130,6 +130,7 @@ class Collection:
             # TODO: excludesubstype does not work?  getting expansions in my game list...
             obj_games = untangle.parse(api_url + no_expansion)
             obj_expansion = untangle.parse(api_url + expansion)
+           # all_plays = untangle.parse("https://api.geekdo.com/xmlapi2/palys?username=" + self.name)
 
             # test for invalid username
             try:
@@ -264,11 +265,11 @@ class Collection:
 
         return col_list
 
-# TODO:  MAKE API CALL TO PLAYS INSTEAD
     def plays(self, g):
         t = time.time()
         check = False
         if not g:
+            #TODO use self.plays instead of self.games 'num_plays'
             play_list = self.sort_by(self.games, 'num_plays')
             print("-" * 40 + f"\nNumber of Plays as of {time.strftime('%m-%d-%Y %H:%M %Z', time.localtime(t))}\n" + "-" * 40)
             for i in range(len(play_list)):
@@ -363,12 +364,26 @@ class Collection:
                 except AttributeError:
                     comment = 'no comment'
 
+                # Handling when no players are added
+                try:
+                    players_temp = play_path.players
+                    players = []
+                    #TODO THIS DOESN'T WORK - NEED NEW OBJECTS EACH TIME.
+                    #this doesn't work, because I need a new object each time, this is just dealing with the same object.
+                    for p in players_temp:
+                        for n in range(len(p.player)):
+                            players.append(self._generate_scoresheet(p.player[n]))
+
+                except AttributeError:
+                    players = []
+                #TODO -> players needs to be parsed more!
                 _play = {
                     'id': play_path['id'],
                     'date': play_path['date'],
                     'quantity': play_path['quantity'],
                     'game': play_path.item['name'],
-                    'comment': comment
+                    'comment': comment,
+                    'players': players
                 }
                 self.play_list.append(_play)
             # If page_num > 0, make another api call to get the next page of play results
@@ -378,6 +393,13 @@ class Collection:
             plays_url = str("http://api.geekdo.com/xmlapi2/plays?username=" + self.name + "&page=" + str(page))
             # TODO: make the untangle part here a separate function returning results -- include 429 and 202 error handling there.
             plays_list = untangle.parse(plays_url)
+
+    def _generate_scoresheet(self,scoresheet):
+        return {
+            "name": scoresheet['name'],
+            "score": scoresheet['score'],
+            "win": scoresheet['win']
+        }
 
 
 def main(argv):

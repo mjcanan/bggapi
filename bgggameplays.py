@@ -107,3 +107,61 @@ if len(collection.play_list) > 0:
     for game in most_played_list:
         print(f"{i:>3}. {game[0]:.<40}Total Plays: {game[1]}")
         i += 1
+
+    print(f"\nTotal Wins: All games\n-----------------------------")
+    i = 1
+    matt_wins = 0
+    jill_wins = 0
+    for el in collection.play_list:
+        # if el['game'] == "My City":
+        #     continue
+        try:
+            for i in range(len(el['players'])):
+                if el['players'][i]['name'] == "Matt":
+                    matt_wins += int(el['players'][i]['win'])
+                if el['players'][i]['name'] == "Jill":
+                    jill_wins += int(el['players'][i]['win'])
+        except KeyError as e:
+            print(e)
+        except IndexError as e:
+            print(e)
+        except AttributeError as e:
+            print(e)
+    print(f"Matt's Wins: {matt_wins}\nJill's Wins: {jill_wins}")
+
+#TODO refactor because slllloooowwww
+    print(f"\nTotal Wins: Per Game")
+    for game in collection.games:
+        counter = 1
+        matt_wins = 0
+        jill_wins = 0
+        matt_high = 0
+        jill_high = 0
+        print(f"{game['name']}")
+        for play in collection.play_list:
+            if not game['name'] == play['game']:
+                continue
+            else:
+                print(f"----------------------------------\nGame {counter}.\n----------------------------------\n")
+                for player in play['players']:
+                    print(f"{player['name']}: {player['score']}")
+                    if player['name'] == "Matt":
+                        if int(player['win']) == 1:
+                            matt_wins += 1
+                        try:
+                            #Note: No Thanks is Low Score -- must account for these
+                            if int(player['score']) > matt_high:
+                                matt_high = int(player['score'])
+                        except Exception:
+                            pass
+                    if player['name'] == "Jill":
+                        if int(player['win']) == 1:
+                            jill_wins += 1
+                        try:
+                            if int(player['score']) > jill_high:
+                                jill_high = int(player['score'])
+                        except Exception:
+                            pass
+                counter += 1
+        print(f"-----------------------------------\n{game['name']} Totals\n---------------------------\nMatt Wins: {matt_wins} Matt High Score: {matt_high}"
+              f"\nJill Wins: {jill_wins} Jill High Score {jill_high}\n")
