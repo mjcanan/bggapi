@@ -47,6 +47,7 @@ class Collection:
         else:
             rating = fp.stats.rating['value']
 
+        # turning bgg untangled xml data in a dictionary for use by user
         _d = {
             'name': p.name.cdata,
             'bgg_id': p['objectid'],
@@ -73,6 +74,7 @@ class Collection:
         return _d
 
     def __check_none(self, value):
+        # a function for handling None values for games with no maximum players and/or no maximum play time
         if value is None:
             return -1
         else:
@@ -121,10 +123,16 @@ class Collection:
         no_expansion = "&excludessubtype=boardgameexpansion"
         expansion = "&subtype=boardgameexpansion"
         full_stats = "&stats=1"
+        check_202 = 0
 
         # Three calls are necessary due to quirks in boardgamegeek.com's API - see bgg xml document tree.txt
         # Some expansions still make it in to the games list due to mislabeling by BGG
         while True:
+            if check_202 > 3:
+                if __name__ == '__main__':
+                    print("Too many retries.  Exiting.")
+                    sys.exit(4)
+
             api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name)
             obj_full = untangle.parse(api_url + full_stats)
             # TODO: excludesubstype does not work?  getting expansions in my game list...
@@ -167,6 +175,7 @@ class Collection:
                 if __name__ == '__main__':
                     print("Response 202.  Retrying in 3 seconds...")
                     time.sleep(3)
+                    check_202 += 1
                     continue
                 else:
                     return 2
@@ -186,8 +195,12 @@ class Collection:
             return 0
 
     def out_formatted(self, f_list, f, s, g):
+        # Outputs your games/wishlist/expansions in an easier to read format
+        # if "g", then this function will output a single game
+        # if "f", prints out the full list of details for your lists, otherwise prints abridged information
+        # if "s", will call sort_by method and sort your list
         count = 0
-        check = True
+        no_game_found = True
         if s:
             f_list = self.sort_by(f_list)
             if f_list[1] == 4:
@@ -196,17 +209,19 @@ class Collection:
         if g:
             temp_list = []
             for el in f_list:
+                # returns multiple results -- better chance of getting something returned this way
                 if g.lower() in el['name'].lower():
                     temp_list.append(el)
                     f = True
-                    check = False
-            if check:
+                    no_game_found = False
+            if no_game_found:
                 print("No game found.  Please check your spelling and try again")
                 return
             else:
                 f_list = temp_list
 
         if f:
+            # prints all data in the dictionary
             for el in f_list:
                 print("-" * 40)
                 for keys in el:
@@ -219,6 +234,7 @@ class Collection:
             print("-" * 40)
             print(f'Total:  {count}')
         else:
+            # printing only abridge info unless "f" - name, msrp, price and amazon link
             for i in range(len(f_list)):
                 print("-" * 40)
                 print(f"name: {f_list[i]['name']}\nmsrp: {f_list[i]['msrp']}\nprice: {f_list[i]['price']}\n" +
@@ -229,6 +245,7 @@ class Collection:
 
     @staticmethod
     def usage(t):
+        # "t" for usage on the command, not "t" for usage while in __main__
         if t:
             print("Usage: bggapi.py [user name] [-h]")
         else:
@@ -244,6 +261,7 @@ class Collection:
                 -g: outputs information for an individual user-chosen game
              q: quit
             -h: help''')
+
 # TODO: more elaborate search - should not allow searches for all values - error when searching by amzlink
     def sort_by(self, col_list, sort_type=""):
         i = 0
@@ -267,19 +285,20 @@ class Collection:
 
     def plays(self, g):
         t = time.time()
-        check = False
+        any_games = False
         if not g:
             #TODO use self.plays instead of self.games 'num_plays'
             play_list = self.sort_by(self.games, 'num_plays')
-            print("-" * 40 + f"\nNumber of Plays as of {time.strftime('%m-%d-%Y %H:%M %Z', time.localtime(t))}\n" + "-" * 40)
+            print("-" * 40 + f"\nNumber of Plays as of {time.strftime('%m-%d-%Y %H:%M %Z', time.localtime(t))}\n"
+                  + "-" * 40)
             for i in range(len(play_list)):
                 print(f"{play_list[i]['num_plays']} - {play_list[i]['name']}")
         else:
             for game in self.games:
                 if g.lower() in game['name'].lower():
                     print(f"{game['name']} - Total Plays: {game['num_plays']}")
-                    check = True
-            if not check:
+                    any_games = True
+            if not any_games:
                 print("No games found.  Please check your spelling and try again")
 
             return
@@ -297,7 +316,15 @@ class Collection:
             el_id = el['bgg_id']
             url = ('https://www.boardgamegeek.com/api/amazon/textads?objectid=' + el_id + '&objecttype=thing')
             response = requests.get(url)
-            amazon = json.loads(response.text)
+            # Handling decoding error (occurred only once in testing)
+            try:
+                amazon = json.loads(response.text)
+                # TODO: error handle for 202 responses at this time?
+            except json.decoder.JSONDecodeError:
+                el['msrp'] = -1
+                el['price'] = -1
+                el['amzlink'] = "n/a"
+                continue
 
             # Visual Output for Command Line
             if __name__ == "__main__":
@@ -329,11 +356,16 @@ class Collection:
                         continue
                     else:
                         # Removing money symbols to avoid errors during sort
-                        # TODO: check for currency type?
-                        amazon_msrp = str(amazon_msrp).replace("$", "").replace("£", "").replace(",", ".").replace("€", "")
-                        amazon_price = str(amazon_price).replace("$", "").replace("£", "").replace(",", ".").replace("€", "")
+                        # (using replace method to avoid importing re)
+                        amazon_msrp = str(amazon_msrp).replace("$", "").replace("£", "")\
+                            .replace(",", ".").replace("€", "").replace("CDN","")
+                        amazon_price = str(amazon_price).replace("$", "").replace("£", "")\
+                            .replace(",", ".").replace("€", "").replace("CDN","")
                         el['msrp'] = float(amazon_msrp)
-                        el['price'] = float(amazon_price)
+                        try:
+                        	el['price'] = float(amazon_price)
+                        except ValueError as e:
+                        	el['price'] = -1
                         el['amzlink'] = amazon_link
                         continue
                 except KeyError:
@@ -423,7 +455,7 @@ def main(argv):
         Collection.usage(True)
         sys.exit(1)
 
-#TODO: change "Collection" to "Player" and have Collection and Plays inherit from Player class
+# TODO: change "Collection" to "Player" and have Collection and Plays inherit from Player class
     table = Collection(user_name)
     table.load()
     table.load_plays()
