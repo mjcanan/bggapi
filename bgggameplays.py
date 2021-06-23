@@ -64,8 +64,8 @@ class PlaysByYearForStats:
                     i += 1
             temp_tup = (game, i)
             self.most_played_list.append(temp_tup)
-        self.most_played_list.sort(key=lambda x: x[1], reverse=True)
-        print(f'most played game of {self.year}: {self.most_played_list[0]}')
+        self.most_played_list.sort(key=lambda x: (x[1], x[0]))
+        print(f'most played game of {self.year}: {self.most_played_list[len(self.most_played_list) - 1]}')
 
     def most_plays_in_year_as_percentage(self):
         collection_played_percent = float(len(self.unique_games_by_year) / self.collection.total_owned)
@@ -114,7 +114,7 @@ class PlaysByYearForStats:
     			print(f"{i:>3}. {game['name']}")
     			i += 1
 
-    def unique_games_played_in_year(self):
+    def unique_2_player_games_not_played_in_year(self):
         temp_two = self.two_player_collection.copy()
         for game_not_played in self.two_player_collection:
             for unique_game_not_played in self.unique_games_by_year:
@@ -203,16 +203,15 @@ def main(args):
     #TODO add CLI argparsing instead of hardcoded
     plays = PlaysByYearForStats("flakcanon", "2021")
     plays.load_users_plays()
-    plays.total_plays_all_games()
     plays.total_plays_in_year()
     plays.overview()
-    plays.total_plays_in_year()
 
     plays.most_played_in_year()
     plays.most_plays_in_year_as_percentage()
     plays.most_2_player_plays_in_year_as_percentage()
+	plays.total_plays_all_games()
     print("----------------------------------\nTwo Player Games Not Played\n----------------------------------")
-    plays.unique_games_played_in_year()
+    plays.unique_2_player_games_not_played_in_year()
     plays.not_played_by_year()
 
     if len(plays.collection.play_list) > 0:
