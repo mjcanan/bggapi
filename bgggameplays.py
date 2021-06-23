@@ -102,6 +102,18 @@ class PlaysByYearForStats:
             print(f"{i:>3}. {game['name']:.<40}min players: {game['min_players']}")
             i += 1
 
+    def not_played_by_year(self):
+    	i = 1
+    	print(f"Games Not Played In {self.year}\n----------------------------------")
+    	for game in self.collection.games:
+    		played = False
+    		for play in self.plays_in_year_list:
+    			if game['name'] == play['game']:
+    				played = True
+    		if not played:
+    			print(f"{i:>3}. {game['name']}")
+    			i += 1
+
     def unique_games_played_in_year(self):
         temp_two = self.two_player_collection.copy()
         for game_not_played in self.two_player_collection:
@@ -191,12 +203,21 @@ def main(args):
     #TODO add CLI argparsing instead of hardcoded
     plays = PlaysByYearForStats("flakcanon", "2021")
     plays.load_users_plays()
+    plays.total_plays_all_games()
+    plays.total_plays_in_year()
     plays.overview()
     plays.total_plays_in_year()
 
+    plays.most_played_in_year()
+    plays.most_plays_in_year_as_percentage()
+    plays.most_2_player_plays_in_year_as_percentage()
+    print("----------------------------------\nTwo Player Games Not Played\n----------------------------------")
+    plays.unique_games_played_in_year()
+    plays.not_played_by_year()
+
     if len(plays.collection.play_list) > 0:
 
-        plays.total_wins_per_game("Star Realms", 0)
+        #plays.total_wins_per_game("Star Realms", 0)
         plays.total_wins_all_games()
 
 if __name__ == '__main__':
