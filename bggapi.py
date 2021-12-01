@@ -138,7 +138,7 @@ class Collection:
             # TODO: excludesubstype does not work?  getting expansions in my game list...
             obj_games = untangle.parse(api_url + no_expansion)
             obj_expansion = untangle.parse(api_url + expansion)
-           # all_plays = untangle.parse("https://api.geekdo.com/xmlapi2/palys?username=" + self.name)
+            # all_plays = untangle.parse("https://api.geekdo.com/xmlapi2/plays?username=" + self.name)
 
             # test for invalid username
             try:
@@ -277,9 +277,9 @@ class Collection:
             col_list = sorted(col_list, key=lambda game: float(game[sort_type]))
         except:
             col_list = sorted(col_list, key=lambda game: game[sort_type])
-            #col_list.sort(key=lambda game: game[sort_type])
-        #except ValueError as err:
-        #    return [err, 4]
+        #     col_list.sort(key=lambda game: game[sort_type])
+        # except ValueError as err:
+        #     return [err, 4]
 
         return col_list
 
@@ -287,7 +287,7 @@ class Collection:
         t = time.time()
         any_games = False
         if not g:
-            #TODO use self.plays instead of self.games 'num_plays'
+            # TODO use self.plays instead of self.games 'num_plays'
             play_list = self.sort_by(self.games, 'num_plays')
             print("-" * 40 + f"\nNumber of Plays as of {time.strftime('%m-%d-%Y %H:%M %Z', time.localtime(t))}\n"
                   + "-" * 40)
@@ -358,14 +358,14 @@ class Collection:
                         # Removing money symbols to avoid errors during sort
                         # (using replace method to avoid importing re)
                         amazon_msrp = str(amazon_msrp).replace("$", "").replace("£", "")\
-                            .replace(",", ".").replace("€", "").replace("CDN","")
+                            .replace(",", ".").replace("€", "").replace("CDN", "")
                         amazon_price = str(amazon_price).replace("$", "").replace("£", "")\
-                            .replace(",", ".").replace("€", "").replace("CDN","")
+                            .replace(",", ".").replace("€", "").replace("CDN", "")
                         el['msrp'] = float(amazon_msrp)
                         try:
-                        	el['price'] = float(amazon_price)
+                            el['price'] = float(amazon_price)
                         except ValueError as e:
-                        	el['price'] = -1
+                            el['price'] = -1
                         el['amzlink'] = amazon_link
                         continue
                 except KeyError:
@@ -426,12 +426,19 @@ class Collection:
             # TODO: make the untangle part here a separate function returning results -- include 429 and 202 error handling there.
             plays_list = untangle.parse(plays_url)
 
-    def _generate_scoresheet(self,scoresheet):
+    def _generate_scoresheet(self, score_sheet):
         return {
-            "name": scoresheet['name'],
-            "score": scoresheet['score'],
-            "win": scoresheet['win']
+            "name": score_sheet['name'],
+            "score": score_sheet['score'],
+            "win": score_sheet['win']
         }
+
+    def get_weight(self, game):
+        game_id = game['bgg_id']
+        weight_url = str(f"http://api.geekdo.com/xmlapi2/thing?id={game_id}&stats=1")
+
+        game_stats = untangle.parse(weight_url)
+        return game_stats.items.item.statistics.ratings.averageweight['value']
 
 
 def main(argv):
@@ -459,6 +466,7 @@ def main(argv):
     table = Collection(user_name)
     table.load()
     table.load_plays()
+    table.get_weight({'bgg_id': '118048'})
   #  print(f"LOADING GAME LIST PRICES FOR {len(table.games)} GAMES...")
    # table.load_price()
    # print(f"LOADING WISH LIST PRICES FOR {len(table.wish_list)} GAMES...")
@@ -466,7 +474,7 @@ def main(argv):
    # print(f"LOADING EXPANSIONS PRICES FOR {len(table.expansions)} EXPANSIONS...")
    # table.load_price(table.expansions)
 
-    while True:
+    while False:
         to_sort = False
         print("-" * 40)
         cmd = input("Command: ").lower()
