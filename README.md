@@ -1,6 +1,15 @@
 # Board Game Geek XML Parser
 ## Description
 This program interacts with boardgamegeek.com's XML API.  By providing your username, this program will call the API and build a list of dictionaries composed of your owned games, owned expansions, and wish list.  This program will also obtain pricing data and an Amazon link to your games.  Output can be in abbreviated or long form.
+### bbggameplays [WIP]
+A separate script is included that retrieves your logged game plays.  This script calculates stats for your logged plays, including:
+  - Most played games
+  - Most played 2 player games
+  - Total games played
+  - Total percent of collection played
+  - Most wins per game
+  - Total wins for all games<br>
+#### There are hardcoded names for retrieving individual player data, which would ideally be replaced with cli arguments. There are also some plots for these statistics.
 ## Usage
 <pre>bggapi.py [user name] [-h]</pre>
 ## Commands
@@ -8,11 +17,13 @@ This program interacts with boardgamegeek.com's XML API.  By providing your user
   - g: output your owned games' names, MSRPs, prices and Amazon Links
   - w: output your wish list, with name of game, msrp, price and Amazon link
   - e: output your owned expansions' anmes, MSRPs, prices and Amazon Links
+  - n: output all games with number of plays
   - -h: help
   - q: quit
 - Flags
   - -f: output full information (see below)
   - -s: sort your chosen list by any key
+  - -g: outputs information for an individual user-chosen game
 ## Data
 This program obtains the following information from the BGG API:<br>
 - The following is always printed to screen:
@@ -59,8 +70,7 @@ Total:  31
 ----------------------------------------
 Command:</pre>
 ### With -f flag
-<pre>
-----------------------------------------
+<pre>----------------------------------------
 name: Ticket to Ride: USA 1910
 bgg_id: 24439
 year_published: 2006
@@ -86,7 +96,16 @@ amzlink: https://www.amazon.com/dp/B000K8FYAS?tag=itemtext-boardgamegeek-20&link
 Total:  12
 ----------------------------------------
 Command:</pre>
+## Dependencies
+untangle<br>
+json<br>
+requests<br>
+time<br>
+sys<br>
+matplotlib<br>
 ## Goals
-- [ ] GUI
+- [ ] Game plays script to cli
+- [ ] Game plays script clean up
+- [ ] Break gameplaysapi into smaller services
 - [ ] Better argument parsing
-- [ ] More Output Formats
+- [x] More Output Formats

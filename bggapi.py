@@ -3,6 +3,7 @@ import json
 import requests
 import time
 import sys
+import math
 #import argparse
 '''
 THE INTENT WITH THIS BRANCH IS TO TURN THIS CODE INTO A SCRIPT THAT WILL GET ME THE CURRENT PRICES
@@ -16,6 +17,8 @@ class Collection:
         self.games = []
         self.expansions = []
         self.wish_list = []
+        self.play_list = []
+        # TODO: have a total_owned and a total_games to account for 1. all objects owned and 2. all base games owned
         self.total_owned = 0
         self.total_wish_list = 0
         self.total_exp = 0
@@ -123,6 +126,7 @@ class Collection:
         check_202 = 0
 
         # Three calls are necessary due to quirks in boardgamegeek.com's API - see bgg xml document tree.txt
+        # Some expansions still make it in to the games list due to mislabeling by BGG
         while True:
             if check_202 > 3:
                 if __name__ == '__main__':
@@ -131,8 +135,10 @@ class Collection:
 
             api_url = str("https://api.geekdo.com/xmlapi2/collection?username=" + self.name)
             obj_full = untangle.parse(api_url + full_stats)
+            # TODO: excludesubstype does not work?  getting expansions in my game list...
             obj_games = untangle.parse(api_url + no_expansion)
             obj_expansion = untangle.parse(api_url + expansion)
+            # all_plays = untangle.parse("https://api.geekdo.com/xmlapi2/plays?username=" + self.name)
 
             # test for invalid username
             try:
@@ -174,6 +180,16 @@ class Collection:
                 else:
                     return 2
             break
+        # TODO: Hack to get expansions out of game list -- need to fix later!
+        to_remove = []
+        for game in self.games:
+            for expansion in self.expansions:
+                if game['name'] == expansion['name']:
+                    to_remove.append(game)
+                    break
+        for game in to_remove:
+            self.games.remove(game)
+            self.total_owned -= 1
 
         if not __name__ == '__main__':
             return 0
@@ -261,9 +277,9 @@ class Collection:
             col_list = sorted(col_list, key=lambda game: float(game[sort_type]))
         except:
             col_list = sorted(col_list, key=lambda game: game[sort_type])
-            #col_list.sort(key=lambda game: game[sort_type])
-        #except ValueError as err:
-        #    return [err, 4]
+        #     col_list.sort(key=lambda game: game[sort_type])
+        # except ValueError as err:
+        #     return [err, 4]
 
         return col_list
 
@@ -271,6 +287,7 @@ class Collection:
         t = time.time()
         any_games = False
         if not g:
+            # TODO use self.plays instead of self.games 'num_plays'
             play_list = self.sort_by(self.games, 'num_plays')
             print("-" * 40 + f"\nNumber of Plays as of {time.strftime('%m-%d-%Y %H:%M %Z', time.localtime(t))}\n"
                   + "-" * 40)
@@ -341,14 +358,14 @@ class Collection:
                         # Removing money symbols to avoid errors during sort
                         # (using replace method to avoid importing re)
                         amazon_msrp = str(amazon_msrp).replace("$", "").replace("£", "")\
-                            .replace(",", ".").replace("€", "").replace("CDN","")
+                            .replace(",", ".").replace("€", "").replace("CDN", "")
                         amazon_price = str(amazon_price).replace("$", "").replace("£", "")\
-                            .replace(",", ".").replace("€", "").replace("CDN","")
+                            .replace(",", ".").replace("€", "").replace("CDN", "")
                         el['msrp'] = float(amazon_msrp)
                         try:
-                        	el['price'] = float(amazon_price)
+                            el['price'] = float(amazon_price)
                         except ValueError as e:
-                        	el['price'] = -1
+                            el['price'] = -1
                         el['amzlink'] = amazon_link
                         continue
                 except KeyError:
@@ -356,6 +373,72 @@ class Collection:
             el['msrp'] = -1
             el['price'] = -1
             el['amzlink'] = "n/a"
+
+    def load_plays(self):
+        # only returns 100 results per page
+        page = 1
+        plays_url = str("http://api.geekdo.com/xmlapi2/plays?username=" + self.name + "&page=" + str(page))
+        plays_list = untangle.parse(plays_url)
+
+        # would like to avoid importing math if possible - this determines number of pages
+        page_num = math.ceil(int(plays_list.plays['total'])/100)
+
+        while page_num > 0:
+            if plays_list.plays['total'] == '0':
+                return
+
+            for i in range(len(plays_list.plays)):
+                play_path = plays_list.plays.play[i]
+
+                # Handling when no comments are entered
+                try:
+                    comment = play_path.comments.cdata
+                except AttributeError:
+                    comment = 'no comment'
+
+                # Handling when no players are added
+                try:
+                    players_temp = play_path.players
+                    players = []
+                    #TODO THIS DOESN'T WORK - NEED NEW OBJECTS EACH TIME.
+                    #this doesn't work, because I need a new object each time, this is just dealing with the same object.
+                    for p in players_temp:
+                        for n in range(len(p.player)):
+                            players.append(self._generate_scoresheet(p.player[n]))
+
+                except AttributeError:
+                    players = []
+                #TODO -> players needs to be parsed more!
+                _play = {
+                    'id': play_path['id'],
+                    'date': play_path['date'],
+                    'quantity': play_path['quantity'],
+                    'game': play_path.item['name'],
+                    'comment': comment,
+                    'players': players
+                }
+                self.play_list.append(_play)
+            # If page_num > 0, make another api call to get the next page of play results
+            page += 1
+            page_num -= 1
+            #TODO: error handle for 429 and 202 errors
+            plays_url = str("http://api.geekdo.com/xmlapi2/plays?username=" + self.name + "&page=" + str(page))
+            # TODO: make the untangle part here a separate function returning results -- include 429 and 202 error handling there.
+            plays_list = untangle.parse(plays_url)
+
+    def _generate_scoresheet(self, score_sheet):
+        return {
+            "name": score_sheet['name'],
+            "score": score_sheet['score'],
+            "win": score_sheet['win']
+        }
+
+    def get_weight(self, game):
+        game_id = game['bgg_id']
+        weight_url = str(f"http://api.geekdo.com/xmlapi2/thing?id={game_id}&stats=1")
+
+        game_stats = untangle.parse(weight_url)
+        return game_stats.items.item.statistics.ratings.averageweight['value']
 
 
 def main(argv):
@@ -382,6 +465,8 @@ def main(argv):
 # TODO: change "Collection" to "Player" and have Collection and Plays inherit from Player class
     table = Collection(user_name)
     table.load()
+    table.load_plays()
+    table.get_weight({'bgg_id': '118048'})
     print(f"LOADING GAME LIST PRICES FOR {len(table.games)} GAMES...")
     table.load_price()
     print(f"LOADING WISH LIST PRICES FOR {len(table.wish_list)} GAMES...")
