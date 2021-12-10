@@ -1,6 +1,15 @@
 # Board Game Geek XML Parser
 ## Description
 This program interacts with boardgamegeek.com's XML API.  By providing your username, this program will call the API and build a list of dictionaries composed of your owned games, owned expansions, and wish list.  This program will also obtain pricing data and an Amazon link to your games.  Output can be in abbreviated or long form.
+### bbggameplays [WIP]
+A separate script is included that retrieves your logged game plays.  This script calculates stats for your logged plays, including:
+  - Most played games
+  - Most played 2 player games
+  - Total games played
+  - Total percent of collection played
+  - Most wins per game
+  - Total wins for all games
+There are hardcoded names for retrieving individual player data, which would ideally be replaced with cli arguments. There are also some plots for these statistics.
 ## Usage
 <pre>bggapi.py [user name] [-h]</pre>
 ## Commands
@@ -93,7 +102,10 @@ json<br>
 requests<br>
 time<br>
 sys<br>
+matplotlib<br>
 ## Goals
-- [ ] GUI
+- [ ] Game plays script to cli
+- [ ] Game plays script clean up
+- [ ] Break gameplaysapi into smaller services
 - [ ] Better argument parsing
 - [x] More Output Formats
