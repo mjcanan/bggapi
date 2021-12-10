@@ -103,7 +103,19 @@ class PlaysByYearForStats:
             print(f"{i:>3}. {game['name']:.<40}min players: {game['min_players']}")
             i += 1
 
-    def unique_games_played_in_year(self):
+    def not_played_by_year(self):
+    	i = 1
+    	print(f"Games Not Played In {self.year}\n----------------------------------")
+    	for game in self.collection.games:
+    		played = False
+    		for play in self.plays_in_year_list:
+    			if game['name'] == play['game']:
+    				played = True
+    		if not played:
+    			print(f"{i:>3}. {game['name']}")
+    			i += 1
+
+    def unique_2_player_games_not_played_in_year(self):
         temp_two = self.two_player_collection.copy()
         for game_not_played in self.two_player_collection:
             for unique_game_not_played in self.unique_games_by_year:
@@ -361,7 +373,6 @@ def main(args):
             plays.most_wins_per_game()
         else:
             plays.total_wins_per_game(game, 1)
-
 
 
 if __name__ == '__main__':
