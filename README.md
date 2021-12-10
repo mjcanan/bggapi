@@ -8,8 +8,8 @@ A separate script is included that retrieves your logged game plays.  This scrip
   - Total games played
   - Total percent of collection played
   - Most wins per game
-  - Total wins for all games
-There are hardcoded names for retrieving individual player data, which would ideally be replaced with cli arguments. There are also some plots for these statistics.
+  - Total wins for all games<br>
+#### There are hardcoded names for retrieving individual player data, which would ideally be replaced with cli arguments. There are also some plots for these statistics.
 ## Usage
 <pre>bggapi.py [user name] [-h]</pre>
 ## Commands
