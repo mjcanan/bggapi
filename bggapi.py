@@ -467,14 +467,14 @@ def main(argv):
     table.load()
     table.load_plays()
     table.get_weight({'bgg_id': '118048'})
-  #  print(f"LOADING GAME LIST PRICES FOR {len(table.games)} GAMES...")
-   # table.load_price()
-   # print(f"LOADING WISH LIST PRICES FOR {len(table.wish_list)} GAMES...")
-   # table.load_price(table.wish_list)
-   # print(f"LOADING EXPANSIONS PRICES FOR {len(table.expansions)} EXPANSIONS...")
-   # table.load_price(table.expansions)
+    print(f"LOADING GAME LIST PRICES FOR {len(table.games)} GAMES...")
+    table.load_price()
+    print(f"LOADING WISH LIST PRICES FOR {len(table.wish_list)} GAMES...")
+    table.load_price(table.wish_list)
+    print(f"LOADING EXPANSIONS PRICES FOR {len(table.expansions)} EXPANSIONS...")
+    table.load_price(table.expansions)
 
-    while False:
+    while True:
         to_sort = False
         print("-" * 40)
         cmd = input("Command: ").lower()
